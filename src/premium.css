@@ -1,4 +1,5 @@
 /* Premium fresh visual layer — deliberately loaded after App.css. */
+.fatal-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 :root{
  --ink:#20252d;--muted:#737b87;--line:#e5eae7;--purple:#7468df;--purple-dark:#5e52c8;
  --lav:#efefff;--coral:#f47768;--card:rgba(255,255,255,.9);--soft:#f4f7f5;--page:#f3f7f5;

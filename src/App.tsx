@@ -10,6 +10,7 @@ import {
 import { supabase } from './lib/supabase'
 import { createComment, createPost, deletePost, fetchSocialPosts, isSupabaseConfigured, reportPost, togglePostLike } from './lib/social'
 import { sendHeart } from './lib/messaging'
+import { friendlyError, safeStorage, withTimeout } from './lib/resilience'
 import { blockUser, fetchIntelligentMapped, fetchMatches, fetchNearbyMatches, fetchProfileBundle, reportUser, saveApproximateLocation, type MatchPerson, type ProfileBundle } from './lib/profiles'
 import './App.css'
 
@@ -159,14 +160,14 @@ function App() {
   const [showProfileEditor, setShowProfileEditor] = useState(false)
   const [showLegal, setShowLegal] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('tongpin-sidebar') === 'collapsed')
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => safeStorage.get('tongpin-sidebar') === 'collapsed')
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [locationEnabled, setLocationEnabled] = useState(false)
   const [locating, setLocating] = useState(false)
   const [discoveryRadius, setDiscoveryRadius] = useState(50)
   const [nearbyPeople, setNearbyPeople] = useState<MatchPerson[]>([])
-  useEffect(() => { localStorage.setItem('tongpin-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded') }, [sidebarCollapsed])
+  useEffect(() => { safeStorage.set('tongpin-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded') }, [sidebarCollapsed])
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [notifications, setNotifications] = useState(true)
   const [session, setSession] = useState<Session | null>(null)
@@ -174,22 +175,22 @@ function App() {
   const [toast, setToast] = useState('')
   const [online, setOnline] = useState(() => navigator.onLine)
   const [insightPerson, setInsightPerson] = useState<(MatchPerson & { analysis?: Record<string, number>; topics?: string[] }) | null>(null)
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('campus-theme') as 'light' | 'dark') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'))
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => (safeStorage.get('campus-theme') as 'light' | 'dark') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'))
   const title = useMemo(() => ({ home: '下午好，小满', matches: '为你找到的同频', preferences: '按偏好推荐', moments: '同频动态', assessment: '自我评测', anonymous: '匿名相遇', messages: '同频消息', account: '关系与安全', legal: '信任与安全中心', data: '数据与账号', admin: '平台审核', profile: '我的同频空间' })[view], [view])
-  useEffect(() => { document.documentElement.dataset.theme = theme; localStorage.setItem('campus-theme', theme) }, [theme])
+  useEffect(() => { document.documentElement.dataset.theme = theme; safeStorage.set('campus-theme', theme) }, [theme])
   useEffect(()=>{const up=()=>setOnline(true),down=()=>setOnline(false);addEventListener('online',up);addEventListener('offline',down);return()=>{removeEventListener('online',up);removeEventListener('offline',down)}},[])
   const notify = (text: string) => { setToast(text); window.setTimeout(() => setToast(''), 2600) }
   const syncProfileAndMatches = async (userId: string) => {
     setMatchesLoading(true)
-    try { const [bundle, matches, intelligent] = await Promise.all([fetchProfileBundle(userId), fetchMatches(), fetchIntelligentMapped().catch(() => [])]); setProfileBundle(bundle); setShowLegal(!bundle.profile.accepted_terms_at || !bundle.profile.birth_date); setMatchPeople(intelligent.length ? intelligent : matches.length ? matches : people) } catch (error) { notify(error instanceof Error ? error.message : '真实匹配加载失败') } finally { setMatchesLoading(false) }
+    try { const [bundle, matches, intelligent] = await withTimeout(Promise.all([fetchProfileBundle(userId), fetchMatches(), fetchIntelligentMapped().catch(() => [])]),12000,'匹配数据加载超时，已保留演示内容'); setProfileBundle(bundle); setShowLegal(!bundle.profile.accepted_terms_at || !bundle.profile.birth_date); setMatchPeople(intelligent.length ? intelligent : matches.length ? matches : people) } catch (error) { notify(friendlyError(error,'真实匹配加载失败')); setMatchPeople(current=>current.length?current:people) } finally { setMatchesLoading(false) }
   }
   const syncPosts = async (userId?: string) => {
     if (!isSupabaseConfigured) return
-    try { const remote = await fetchSocialPosts(userId); setPosts(remote) } catch (error) { notify(error instanceof Error ? error.message : '动态加载失败') }
+    try { const remote = await withTimeout(fetchSocialPosts(userId),10000,'动态加载超时，已显示本地内容'); setPosts(remote) } catch (error) { notify(friendlyError(error,'动态加载失败')) }
   }
   useEffect(() => {
     if (!supabase) return
-    supabase.auth.getSession().then(({ data }) => { setSession(data.session); if (data.session) { void syncPosts(data.session.user.id); void syncProfileAndMatches(data.session.user.id) } })
+    withTimeout(supabase.auth.getSession(),8000,'登录状态读取超时').then(({ data }) => { setSession(data.session); if (data.session) { void syncPosts(data.session.user.id); void syncProfileAndMatches(data.session.user.id) } }).catch(()=>setSession(null))
     const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => { setSession(nextSession); if (nextSession) window.setTimeout(() => { void syncPosts(nextSession.user.id); void syncProfileAndMatches(nextSession.user.id) }, 0) })
     return () => data.subscription.unsubscribe()
   }, [])

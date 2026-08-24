@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Clock3, Search, Sparkles, User, X } from 'lucide-react'
+import { safeStorage } from '../lib/resilience'
 
 type Person={id:string|number;name:string;school:string;major:string;tags:string[];avatar:string}
 type Page={id:string;label:string}
@@ -10,7 +11,7 @@ export default function GlobalSearch({people,pages,onPerson,onPage}:Props){
  const[open,setOpen]=useState(false)
  const[query,setQuery]=useState('')
  const[active,setActive]=useState(0)
- const[recent,setRecent]=useState<string[]>(()=>{try{return JSON.parse(localStorage.getItem('tongpin-searches')||'[]')}catch{return[]}})
+ const[recent,setRecent]=useState<string[]>(()=>{try{return JSON.parse(safeStorage.get('tongpin-searches')||'[]')}catch{return[]}})
  const input=useRef<HTMLInputElement>(null)
  const trigger=useRef<HTMLButtonElement>(null)
  const normalized=query.trim().toLowerCase()
@@ -20,7 +21,7 @@ export default function GlobalSearch({people,pages,onPerson,onPage}:Props){
  useEffect(()=>{const key=(event:KeyboardEvent)=>{if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='k'){event.preventDefault();setOpen(true)}else if(event.key==='Escape'&&open){setOpen(false);trigger.current?.focus()}};addEventListener('keydown',key);return()=>removeEventListener('keydown',key)},[open])
  useEffect(()=>{if(open){document.body.style.overflow='hidden';requestAnimationFrame(()=>input.current?.focus())}return()=>{document.body.style.overflow=''}},[open])
  const close=()=>{setOpen(false);trigger.current?.focus()}
- const remember=(value:string)=>{const next=[value,...recent.filter(x=>x!==value)].slice(0,5);setRecent(next);localStorage.setItem('tongpin-searches',JSON.stringify(next))}
+ const remember=(value:string)=>{const next=[value,...recent.filter(x=>x!==value)].slice(0,5);setRecent(next);safeStorage.set('tongpin-searches',JSON.stringify(next))}
  const choose=(item:Item)=>{if(item.page){remember(item.page.label);onPage(item.page.id)}else if(item.person){remember(item.person.name);onPerson(item.person.id)}close()}
  const inputKey=(event:React.KeyboardEvent)=>{if(!items.length)return;if(event.key==='ArrowDown'){event.preventDefault();setActive(i=>(i+1)%items.length)}else if(event.key==='ArrowUp'){event.preventDefault();setActive(i=>(i-1+items.length)%items.length)}else if(event.key==='Enter'){event.preventDefault();choose(items[active])}}
  return <>
