@@ -4,6 +4,7 @@ import './index.css'
 import './premium.css'
 import './interactions.css'
 import './health.css'
+import './executive.css'
 import App from './App.tsx'
 import AppErrorBoundary from './components/AppErrorBoundary.tsx'
 
