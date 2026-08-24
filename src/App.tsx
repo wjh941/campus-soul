@@ -78,7 +78,7 @@ function Avatar({ src, size = 44, online = false }: { src: string; size?: number
 
 type Person = typeof people[0] | MatchPerson
 function MatchCard({ person, onOpen, onInsight }: { person: Person; onOpen: () => void; onInsight?: () => void }) {
-  return <motion.article className="match-card" whileHover={{ y: -7 }} transition={{ type: 'spring', stiffness: 260 }} onClick={onOpen}>
+  return <motion.article className="match-card" whileHover={{ y: -7 }} transition={{ type: 'spring', stiffness: 260 }} onClick={onOpen} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onOpen()}}} role="button" tabIndex={0} aria-label={`查看${person.name}的资料，契合度${person.score}%`}>
     <div className="match-photo"><img src={person.avatar} alt={person.name} /><div className="score-orbit"><b>{person.score}%</b><span>契合</span></div><button className="floating-heart" onClick={e => e.stopPropagation()}><Heart size={19} /></button></div>
     <div className="match-content"><div className="person-title"><h3>{person.name}<span>{person.age}</span></h3><span className="distance"><MapPin size={13} />{person.distance}</span></div><p className="school-line"><GraduationCap size={15} />{person.school} · {person.major}</p><p className="quote">“{person.quote}”</p>{onInsight&&<button className="insight-link" onClick={e=>{e.stopPropagation();onInsight()}}><Sparkles size={12}/>查看匹配分析</button>}<div className="tag-row">{person.tags.map(t => <span key={t}>{t}</span>)}</div><div className="mini-bars">{['价值观', '兴趣', '生活节奏'].map((x, i) => <div key={x}><span>{x}</span><i><b style={{ width: `${person.dimensions[i]}%`, background: person.color }} /></i></div>)}</div></div>
   </motion.article>
