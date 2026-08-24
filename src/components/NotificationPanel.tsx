@@ -1,30 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Bell, BellRing, Check, LoaderCircle, X } from 'lucide-react'
+import { Bell, BellRing, Check, LoaderCircle, RefreshCw, X } from 'lucide-react'
 import { enableBrowserNotifications, fetchNotifications, markAllRead } from '../lib/notifications'
 
 type Item = Awaited<ReturnType<typeof fetchNotifications>>[number]
-
-export default function NotificationPanel({ userId, onClose }: { userId: string; onClose: () => void }) {
-  const [items, setItems] = useState<Item[]>([])
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
-  const load = useCallback(async () => {
-    setLoading(true)
-    try { setItems(await fetchNotifications(userId)) } finally { setLoading(false) }
-  }, [userId])
-  useEffect(() => { window.setTimeout(() => void load(), 0) }, [load])
-  const enable = async () => {
-    try { await enableBrowserNotifications(); setMessage('浏览器通知已开启') }
-    catch (e) { setMessage(e instanceof Error ? e.message : '开启失败') }
-  }
-  const readAll = async () => { await markAllRead(userId); await load() }
-  return <aside className="notification-panel">
-    <header><div><Bell /><h2>通知中心</h2></div><button onClick={onClose}><X /></button></header>
-    <button className="browser-notify" onClick={() => void enable()}><BellRing />开启浏览器通知</button>
-    {message && <p className="notify-message">{message}</p>}
-    <button className="mark-read" onClick={() => void readAll()}><Check />全部已读</button>
-    <div className="notification-items">
-      {loading ? <LoaderCircle className="spin" /> : !items.length ? <div className="notify-empty">暂时没有新通知</div> : items.map(item => <article className={item.read_at ? '' : 'unread'} key={item.id}><i /><div><b>{item.title}</b><p>{item.body}</p><time>{new Date(item.created_at).toLocaleString()}</time></div></article>)}
-    </div>
-  </aside>
+export default function NotificationPanel({userId,onClose}:{userId:string;onClose:()=>void}){
+ const[items,setItems]=useState<Item[]>([]),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState('')
+ const load=useCallback(async()=>{setLoading(true);setError('');try{setItems(await fetchNotifications(userId))}catch(e){setError(e instanceof Error?e.message:'通知加载失败')}finally{setLoading(false)}},[userId])
+ useEffect(()=>{const timer=window.setTimeout(()=>void load(),0);return()=>clearTimeout(timer)},[load])
+ const enable=async()=>{if(busy)return;setBusy(true);setError('');try{await enableBrowserNotifications();setMessage('浏览器通知已开启')}catch(e){setError(e instanceof Error?e.message:'开启失败')}finally{setBusy(false)}}
+ const readAll=async()=>{if(busy||!items.some(x=>!x.read_at))return;setBusy(true);setError('');try{await markAllRead(userId);setItems(list=>list.map(x=>({...x,read_at:x.read_at??new Date().toISOString()})));setMessage('所有通知已标记为已读')}catch(e){setError(e instanceof Error?e.message:'标记失败')}finally{setBusy(false)}}
+ return <aside className="notification-panel" aria-label="通知中心"><header><div><Bell/><h2>通知中心</h2></div><button aria-label="关闭通知中心" onClick={onClose}><X/></button></header><button className="browser-notify" disabled={busy||Notification.permission==='granted'} onClick={()=>void enable()}>{busy?<LoaderCircle className="spin"/>:<BellRing/>}{Notification.permission==='granted'?'浏览器通知已开启':'开启浏览器通知'}</button>{message&&<p className="notify-message success">{message}</p>}{error&&<div className="notify-message error">{error}<button onClick={()=>void load()}><RefreshCw/>重试</button></div>}<button className="mark-read" disabled={busy||!items.some(x=>!x.read_at)} onClick={()=>void readAll()}><Check/>全部已读</button><div className="notification-items" aria-live="polite">{loading?<LoaderCircle className="spin"/>:!items.length?<div className="notify-empty"><Bell/><b>暂时没有通知</b><p>心动、消息与审核进度会出现在这里。</p></div>:items.map(item=><article className={item.read_at?'':'unread'} key={item.id}><i/><div><b>{item.title}</b><p>{item.body}</p><time>{new Date(item.created_at).toLocaleString()}</time></div></article>)}</div></aside>
 }

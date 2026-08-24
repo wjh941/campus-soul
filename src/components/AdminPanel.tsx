@@ -1,35 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Ban, Check, Flag, LoaderCircle, Search, ShieldCheck, X } from 'lucide-react'
+import { Ban, Check, Flag, LoaderCircle, RefreshCw, Search, ShieldCheck, X } from 'lucide-react'
 import { adminSearchUsers, fetchAdminQueue, getEvidenceUrl, moderateTarget, resolveReport, reviewVerification } from '../lib/account'
 
-type Queue = Awaited<ReturnType<typeof fetchAdminQueue>>
-
-export default function AdminPanel() {
-  const [data, setData] = useState<Queue>({ verifications: [], reports: [] })
-  const [loading, setLoading] = useState(false)
-  const [query, setQuery] = useState('')
-  const [users, setUsers] = useState<Awaited<ReturnType<typeof adminSearchUsers>>>([])
-  const load = useCallback(async () => {
-    setLoading(true)
-    try { setData(await fetchAdminQueue()) } finally { setLoading(false) }
-  }, [])
-  useEffect(() => { window.setTimeout(() => void load(), 0) }, [load])
-  const decide = async (id: string, decision: 'approved' | 'rejected') => {
-    await reviewVerification(id, decision)
-    await load()
-  }
-  return <div className="admin-panel">
-    <div className="admin-summary">
-      <div><ShieldCheck /><span><b>{data.verifications.filter(x => x.status === 'pending').length}</b>待审认证</span></div>
-      <div><Flag /><span><b>{data.reports.filter(x => x.status === 'pending').length}</b>待处理举报</span></div>
-    </div>
-    <section className="admin-card"><h2>用户搜索与处罚</h2><label className="admin-search"><Search/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="搜索昵称或邮箱"/><button onClick={async()=>setUsers(await adminSearchUsers(query))}>搜索</button></label>{users.map(user=><div className="admin-row" key={user.id}><div><b>{user.nickname}</b><span>{user.email} · {user.life_stage} · {user.city||'未填写城市'}</span></div><em>{user.account_status}</em><button onClick={async()=>{await moderateTarget(user.id,null,'mute','管理员操作',24);setUsers(await adminSearchUsers(query))}}>禁言24h</button><button onClick={async()=>{await moderateTarget(user.id,null,'suspend','管理员操作');setUsers(await adminSearchUsers(query))}}>暂停</button><button className="danger-action" onClick={async()=>{await moderateTarget(user.id,null,'ban','严重违反社区规则');setUsers(await adminSearchUsers(query))}}><Ban/>封禁</button></div>)}</section>
-    <section className="admin-card"><h2>身份认证队列</h2>
-      {loading ? <LoaderCircle className="spin" /> : data.verifications.map(item => <div className="admin-row" key={item.id}>
-        <div><b>{item.organization}</b><span>{item.verification_type} · {item.contact_email}</span></div><em>{item.status}</em>
-        {item.evidence_url&&<button onClick={async()=>window.open(await getEvidenceUrl(item.evidence_url!),'_blank')}>查看材料</button>}{item.status === 'pending' && <><button className="approve" onClick={() => void decide(item.id, 'approved')}><Check />通过</button><button onClick={() => void decide(item.id, 'rejected')}><X />拒绝</button></>}
-      </div>)}
-    </section>
-    <section className="admin-card"><h2>举报审核</h2>{data.reports.map(item => <div className="admin-row" key={item.id}><div><b>{item.reason}</b><span>{item.details || '无补充说明'} · {new Date(item.created_at).toLocaleDateString()}</span></div><em>{item.status}</em>{item.status==='pending'&&<><button onClick={async()=>{if(item.target_user_id)await moderateTarget(item.target_user_id,null,'warn','举报审核警告');await resolveReport(item.id,'resolved');await load()}}>警告并处理</button><button onClick={async()=>{if(item.target_user_id)await moderateTarget(item.target_user_id,null,'mute','举报审核禁言',24);await resolveReport(item.id,'resolved');await load()}}>禁言24h</button><button onClick={async()=>{await resolveReport(item.id,'dismissed');await load()}}>驳回</button></>}</div>)}</section>
-  </div>
+type Queue=Awaited<ReturnType<typeof fetchAdminQueue>>
+export default function AdminPanel(){
+ const[data,setData]=useState<Queue>({verifications:[],reports:[]}),[loading,setLoading]=useState(false),[action,setAction]=useState(''),[error,setError]=useState(''),[message,setMessage]=useState(''),[query,setQuery]=useState(''),[users,setUsers]=useState<Awaited<ReturnType<typeof adminSearchUsers>>>([])
+ const load=useCallback(async()=>{setLoading(true);setError('');try{setData(await fetchAdminQueue())}catch(e){setError(e instanceof Error?e.message:'审核队列加载失败')}finally{setLoading(false)}},[]);useEffect(()=>{const timer=setTimeout(()=>void load(),0);return()=>clearTimeout(timer)},[load])
+ const run=async(key:string,work:()=>Promise<void>,success:string)=>{if(action)return;setAction(key);setError('');try{await work();setMessage(success);await load()}catch(e){setError(e instanceof Error?e.message:'审核操作失败')}finally{setAction('')}}
+ const search=async()=>{if(action)return;setAction('search');setError('');try{setUsers(await adminSearchUsers(query.trim()))}catch(e){setError(e instanceof Error?e.message:'搜索失败')}finally{setAction('')}}
+ const punish=async(id:string,name:string,kind:'mute'|'suspend'|'ban')=>{if(!confirm(`确认对「${name}」执行${kind==='mute'?'禁言 24 小时':kind==='suspend'?'暂停账号':'永久封禁'}吗？`))return;await run(`${kind}-${id}`,()=>moderateTarget(id,null,kind,kind==='ban'?'严重违反社区规则':'管理员审核操作',kind==='mute'?24:undefined),'用户状态已更新');setUsers(await adminSearchUsers(query.trim()))}
+ return <div className="admin-panel">{message&&<div className="verify-message success"><Check/>{message}</div>}{error&&<div className="verify-message error">{error}<button onClick={()=>void load()}><RefreshCw/>重试</button></div>}<div className="admin-summary"><div><ShieldCheck/><span><b>{data.verifications.filter(x=>x.status==='pending').length}</b>待审认证</span></div><div><Flag/><span><b>{data.reports.filter(x=>x.status==='pending').length}</b>待处理举报</span></div></div><section className="admin-card"><h2>用户搜索与处罚</h2><label className="admin-search"><Search/><input value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')void search()}} placeholder="搜索昵称或邮箱"/><button disabled={Boolean(action)} onClick={()=>void search()}>{action==='search'?<LoaderCircle className="spin"/>:'搜索'}</button></label>{users.length===0?<div className="manage-empty">输入昵称或邮箱查找用户</div>:users.map(user=><div className="admin-row" key={user.id}><div><b>{user.nickname}</b><span>{user.email} · {user.life_stage} · {user.city||'未填写城市'}</span></div><em>{user.account_status}</em><button disabled={Boolean(action)} onClick={()=>void punish(user.id,user.nickname,'mute')}>禁言24h</button><button disabled={Boolean(action)} onClick={()=>void punish(user.id,user.nickname,'suspend')}>暂停</button><button disabled={Boolean(action)} className="danger-action" onClick={()=>void punish(user.id,user.nickname,'ban')}><Ban/>封禁</button></div>)}</section><section className="admin-card"><h2>身份认证队列</h2>{loading?<LoaderCircle className="spin"/>:!data.verifications.length?<div className="manage-empty">暂无认证申请</div>:data.verifications.map(item=><div className="admin-row" key={item.id}><div><b>{item.organization}</b><span>{item.verification_type} · {item.contact_email}</span></div><em>{item.status}</em>{item.evidence_url&&<button disabled={Boolean(action)} onClick={async()=>{try{window.open(await getEvidenceUrl(item.evidence_url!),'_blank','noopener,noreferrer')}catch(e){setError(e instanceof Error?e.message:'材料打开失败')}}}>查看材料</button>}{item.status==='pending'&&<><button disabled={Boolean(action)} className="approve" onClick={()=>void run(`approve-${item.id}`,()=>reviewVerification(item.id,'approved'),'认证已通过')}><Check/>通过</button><button disabled={Boolean(action)} onClick={()=>void run(`reject-${item.id}`,()=>reviewVerification(item.id,'rejected'),'认证已拒绝')}><X/>拒绝</button></>}</div>)}</section><section className="admin-card"><h2>举报审核</h2>{!data.reports.length?<div className="manage-empty">暂无举报记录</div>:data.reports.map(item=><div className="admin-row" key={item.id}><div><b>{item.reason}</b><span>{item.details||'无补充说明'} · {new Date(item.created_at).toLocaleDateString()}</span></div><em>{item.status}</em>{item.status==='pending'&&<><button disabled={Boolean(action)} onClick={()=>void run(`warn-${item.id}`,async()=>{if(item.target_user_id)await moderateTarget(item.target_user_id,null,'warn','举报审核警告');await resolveReport(item.id,'resolved')},'举报已处理')}>警告并处理</button><button disabled={Boolean(action)} onClick={()=>void run(`mute-report-${item.id}`,async()=>{if(item.target_user_id)await moderateTarget(item.target_user_id,null,'mute','举报审核禁言',24);await resolveReport(item.id,'resolved')},'已禁言并处理')}>禁言24h</button><button disabled={Boolean(action)} onClick={()=>void run(`dismiss-${item.id}`,()=>resolveReport(item.id,'dismissed'),'举报已驳回')}>驳回</button></>}</div>)}</section></div>
 }

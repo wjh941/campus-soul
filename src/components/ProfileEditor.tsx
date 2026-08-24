@@ -42,12 +42,13 @@ export default function ProfileEditor({ user, onClose, onSaved }: Props) {
     } catch (e) { setError(e instanceof Error ? e.message : '保存失败') } finally { setBusy(false) }
   }
 
+  const validImage=(file:File)=>{if(file.size>5*1024*1024)throw new Error('图片不能超过 5 MB');if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw new Error('仅支持 JPG、PNG 或 WebP')}
   const changeAvatar = async (file?: File) => {
-    if (!file) return; setBusy(true)
+    if (!file) return; setBusy(true);setError('');try{validImage(file)}catch(e){setError(e instanceof Error?e.message:'图片不符合要求');setBusy(false);return}
     try { update({ avatar_url: await uploadAvatar(user, file) }) } catch (e) { setError(e instanceof Error ? e.message : '上传失败') } finally { setBusy(false) }
   }
   const addPhoto = async (file?: File) => {
-    if (!file) return; setBusy(true)
+    if (!file) return; setBusy(true);setError('');try{validImage(file)}catch(e){setError(e instanceof Error?e.message:'图片不符合要求');setBusy(false);return}
     try { await addProfilePhoto(user, file, bundle.photos.length); setBundle(await fetchProfileBundle(user.id)) } catch (e) { setError(e instanceof Error ? e.message : '上传失败') } finally { setBusy(false) }
   }
 
