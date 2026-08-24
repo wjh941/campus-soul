@@ -1,0 +1,246 @@
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import type { Session } from '@supabase/supabase-js'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  Bell, ChevronRight, Compass, Heart, Home, ImagePlus, MapPin, MessageCircle,
+  MoreHorizontal, Search, Send, ShieldCheck, SlidersHorizontal, Sparkles, User,
+  Users, X, Zap, GraduationCap, Coffee, BookOpen, Check, ArrowRight,
+  Quote, Bookmark, Settings, Camera, Smile, LogIn, LogOut, LoaderCircle, Upload, WifiOff, Moon, Sun, Target, Flag, Ban, PanelLeftClose, PanelLeftOpen, ChevronDown, Menu, LifeBuoy, VenetianMask
+} from 'lucide-react'
+import { supabase } from './lib/supabase'
+import { createComment, createPost, deletePost, fetchSocialPosts, isSupabaseConfigured, reportPost, togglePostLike } from './lib/social'
+import { sendHeart } from './lib/messaging'
+import { blockUser, fetchIntelligentMapped, fetchMatches, fetchNearbyMatches, fetchProfileBundle, reportUser, saveApproximateLocation, type MatchPerson, type ProfileBundle } from './lib/profiles'
+import './App.css'
+
+const ChatPanel = lazy(() => import('./components/ChatPanel'))
+const ProfileEditor = lazy(() => import('./components/ProfileEditor'))
+const PreferenceRecommendations = lazy(() => import('./components/PreferenceRecommendations'))
+const AccountCenter = lazy(() => import('./components/AccountCenter'))
+const AdminPanel = lazy(() => import('./components/AdminPanel'))
+const LegalModal = lazy(() => import('./components/LegalModal'))
+const NotificationPanel = lazy(() => import('./components/NotificationPanel'))
+const LegalDocuments = lazy(() => import('./components/LegalDocuments'))
+const DataRights = lazy(() => import('./components/DataRights'))
+const DiscoveryMap = lazy(() => import('./components/DiscoveryMap'))
+const AnonymousChat = lazy(() => import('./components/AnonymousChat'))
+const AssessmentCenter = lazy(() => import('./components/AssessmentCenter'))
+const MatchInsights = lazy(() => import('./components/MatchInsights'))
+
+type View = 'home' | 'matches' | 'preferences' | 'assessment' | 'moments' | 'anonymous' | 'messages' | 'account' | 'legal' | 'data' | 'admin' | 'profile'
+type Comment = { id: string | number; name: string; avatar: string; text: string }
+type Post = {
+  id: string | number; authorId?: string; name: string; avatar: string; school: string; time: string; text: string;
+  image?: string; tags: string[]; likes: number; liked: boolean; comments: Comment[]
+}
+
+const people = [
+  { id: 1, name: '林知夏', age: 21, school: '同济大学', major: '建筑学', score: 96, distance: '1.2km', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop', tags: ['INFJ', '胶片摄影', '城市漫游'], quote: '想和有趣的人，把普通日子过成限定版。', color: '#ff715b', dimensions: [98, 94, 91] },
+  { id: 2, name: '陈予安', age: 22, school: '复旦大学', major: '新闻传播', score: 92, distance: '3.8km', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&auto=format&fit=crop', tags: ['ENFP', 'Livehouse', '网球'], quote: '世界很大，愿我们都保有出发的勇气。', color: '#7c5cff', dimensions: [95, 89, 92] },
+  { id: 3, name: '顾南乔', age: 20, school: '华东师范大学', major: '心理学', score: 89, distance: '5.1km', avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=500&auto=format&fit=crop', tags: ['INTJ', '话剧', '小动物'], quote: '真诚是永远的必杀技。', color: '#34b991', dimensions: [91, 88, 87] },
+  { id: 4, name: '周屿', age: 23, school: '上海交通大学', major: '工业设计', score: 87, distance: '6.4km', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&auto=format&fit=crop', tags: ['ISFP', '攀岩', '设计'], quote: '在旷野里，寻找生活的另一种解法。', color: '#2f8cff', dimensions: [88, 86, 91] },
+]
+
+const seedPosts: Post[] = [
+  { id: 1, name: '林知夏', avatar: people[0].avatar, school: '同济大学', time: '18分钟前', text: '在武康路拐进一条没走过的小巷，遇见了一家只放爵士乐的旧书店。城市的惊喜，大概就藏在“不按计划”里。', image: 'https://images.unsplash.com/photo-1526243741027-444d633d7365?w=1000&auto=format&fit=crop', tags: ['城市漫游', '今日份浪漫'], likes: 128, liked: false, comments: [{ id: 1, name: '陈予安', avatar: people[1].avatar, text: '求店名！周末也想去坐一下午 📖' }] },
+  { id: 2, name: '陈予安', avatar: people[1].avatar, school: '复旦大学', time: '1小时前', text: '“年轻时，我们彼此相爱却浑然不知。” 看完《流浪的月》，在草坪上发了好久的呆。最近你们在读什么？', tags: ['书影音', '寻找同频'], likes: 76, liked: true, comments: [{ id: 1, name: '顾南乔', avatar: people[2].avatar, text: '最近在重读《悉达多》，每个阶段看都有新感受。' }, { id: 2, name: '周屿', avatar: people[3].avatar, text: '这句也太适合初夏了。' }] },
+  { id: 3, name: '顾南乔', avatar: people[2].avatar, school: '华东师范大学', time: '昨天 22:14', text: '第一次做陶，杯子歪歪扭扭，但手掌记住了泥土的温度。接受不完美，也是很重要的课题吧。', image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=1000&auto=format&fit=crop', tags: ['生活碎片', '手作'], likes: 203, liked: false, comments: [] },
+]
+
+const navGroups = [
+  { label: '探索', items: [
+    { id: 'home' as View, label: '首页', icon: Home },
+    { id: 'matches' as View, label: '心动匹配', icon: Sparkles, badge: '12' },
+    { id: 'preferences' as View, label: '偏好推荐', icon: Target },
+    { id: 'assessment' as View, label: '自我评测', icon: Sparkles },
+    { id: 'moments' as View, label: '同频动态', icon: Compass },
+  ]},
+  { label: '连接', items: [
+    { id: 'anonymous' as View, label: '匿名相遇', icon: VenetianMask },
+    { id: 'messages' as View, label: '消息', icon: MessageCircle, badge: '3' },
+    { id: 'profile' as View, label: '我的主页', icon: User },
+  ]},
+  { label: '支持', items: [
+    { id: 'account' as View, label: '关系与安全', icon: ShieldCheck },
+    { id: 'legal' as View, label: '信任中心', icon: BookOpen },
+  ]},
+]
+const mobileNav = navGroups.flatMap(group => group.items).filter(item => ['home','matches','moments','messages','profile'].includes(item.id))
+
+function PageLoading({label='正在加载内容'}:{label?:string}){return <div className="premium-loader" role="status"><div className="loader-orbit"><i/><i/><Sparkles/></div><b>{label}</b><span>正在为你准备更好的体验</span><div className="loader-lines"><i/><i/><i/></div></div>}
+
+function Avatar({ src, size = 44, online = false }: { src: string; size?: number; online?: boolean }) {
+  return <div className="avatar-wrap" style={{ width: size, height: size }}><img className="avatar" src={src} alt="头像" />{online && <span className="online" />}</div>
+}
+
+type Person = typeof people[0] | MatchPerson
+function MatchCard({ person, onOpen, onInsight }: { person: Person; onOpen: () => void; onInsight?: () => void }) {
+  return <motion.article className="match-card" whileHover={{ y: -7 }} transition={{ type: 'spring', stiffness: 260 }} onClick={onOpen}>
+    <div className="match-photo"><img src={person.avatar} alt={person.name} /><div className="score-orbit"><b>{person.score}%</b><span>契合</span></div><button className="floating-heart" onClick={e => e.stopPropagation()}><Heart size={19} /></button></div>
+    <div className="match-content"><div className="person-title"><h3>{person.name}<span>{person.age}</span></h3><span className="distance"><MapPin size={13} />{person.distance}</span></div><p className="school-line"><GraduationCap size={15} />{person.school} · {person.major}</p><p className="quote">“{person.quote}”</p>{onInsight&&<button className="insight-link" onClick={e=>{e.stopPropagation();onInsight()}}><Sparkles size={12}/>查看匹配分析</button>}<div className="tag-row">{person.tags.map(t => <span key={t}>{t}</span>)}</div><div className="mini-bars">{['价值观', '兴趣', '生活节奏'].map((x, i) => <div key={x}><span>{x}</span><i><b style={{ width: `${person.dimensions[i]}%`, background: person.color }} /></i></div>)}</div></div>
+  </motion.article>
+}
+
+function Composer({ onPost, authenticated }: { onPost: (text: string, image?: File) => Promise<void>; authenticated: boolean }) {
+  const [text, setText] = useState('')
+  const [image, setImage] = useState<File>()
+  const [busy, setBusy] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const submit = async () => {
+    if (!text.trim() || busy) return
+    setBusy(true)
+    try { await onPost(text, image); setText(''); setImage(undefined) } finally { setBusy(false) }
+  }
+  return <div className="composer glass-card"><Avatar src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop" size={45} /><div className="composer-main"><textarea value={text} maxLength={2000} onChange={e => setText(e.target.value)} placeholder={authenticated ? '此刻，你想和大家分享什么？' : '登录后发布真实同频动态'} />{image && <div className="image-chip"><Upload size={13} /><span>{image.name}</span><button onClick={() => setImage(undefined)}><X size={13} /></button></div>}<div className="composer-tools"><div><input ref={fileRef} hidden type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={e => setImage(e.target.files?.[0])} /><button onClick={() => fileRef.current?.click()}><ImagePlus size={18} />图片</button><button><MapPin size={18} />位置</button><button><Smile size={18} />心情</button></div><button className="primary small" disabled={!text.trim() || busy} onClick={submit}>{busy ? <LoaderCircle className="spin" size={15} /> : <>发布 <Send size={15} /></>}</button></div></div></div>
+}
+
+function PostCard({ post, onLike, onComment, onDelete, onReport }: { post: Post; onLike: () => void; onComment: (text: string) => void; onDelete?: () => void; onReport?: () => void }) {
+  const [comment, setComment] = useState('')
+  const [open, setOpen] = useState(post.comments.length > 0)
+  return <motion.article layout className="post-card glass-card" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
+    <header><Avatar src={post.avatar} size={45} online /><div><strong>{post.name}</strong><span>{post.school} · {post.time}</span></div>{onDelete?<button className="delete-post" onClick={onDelete}>删除</button>:onReport?<button className="report-post" onClick={onReport}><Flag size={14}/>举报</button>:<button className="icon-btn"><MoreHorizontal size={20} /></button>}</header>
+    <p className="post-text">{post.text}</p><div className="tag-row">{post.tags.map(t => <span key={t}>#{t}</span>)}</div>
+    {post.image && <img className="post-image" src={post.image} alt="动态配图" />}
+    <div className="post-actions"><button onClick={onLike} className={post.liked ? 'liked' : ''}><Heart size={19} fill={post.liked ? 'currentColor' : 'none'} />{post.likes}</button><button onClick={() => setOpen(!open)}><MessageCircle size={19} />{post.comments.length}</button><button><Send size={18} />分享</button><button className="save"><Bookmark size={18} /></button></div>
+    <AnimatePresence>{open && <motion.div className="comments" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
+      {post.comments.map(c => <div className="comment" key={c.id}><Avatar src={c.avatar} size={29} /><p><strong>{c.name}</strong>{c.text}</p></div>)}
+      <div className="comment-input"><Avatar src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop" size={29} /><input value={comment} onChange={e => setComment(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && comment.trim()) { onComment(comment); setComment('') } }} placeholder="友善地说点什么…" /><button onClick={() => { if (comment.trim()) { onComment(comment); setComment('') } }}><Send size={16} /></button></div>
+    </motion.div>}</AnimatePresence>
+  </motion.article>
+}
+
+function ProfileModal({ person, onClose, onHeart, onReport, onBlock }: { person: Person; onClose: () => void; onHeart: () => Promise<void>; onReport: () => Promise<void>; onBlock: () => Promise<void> }) {
+  const [sending, setSending] = useState(false)
+  return <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}><motion.div className="profile-modal" initial={{ scale: .92, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: .94, opacity: 0 }} onClick={e => e.stopPropagation()}><button className="modal-close" onClick={onClose}><X /></button><div className="modal-cover"><img src={person.avatar} alt="" /><div className="modal-gradient" /><div className="modal-name"><span className="verified"><ShieldCheck size={15} />身份已认证</span><h2>{person.name}, {person.age}</h2><p><GraduationCap size={16} />{person.school} · {person.major}</p></div></div><div className="modal-body"><div className="match-summary"><div className="big-score">{person.score}<small>%</small></div><div><h3>你们非常合拍</h3><p>基于 6 个维度、32 项偏好分析</p></div></div><div className="why-match"><h3>为什么推荐 TA</h3><div className="reason-grid"><div><span>🌙</span><b>相似的生活节奏</b><p>都偏爱安静且有计划的周末</p></div><div><span>💬</span><b>互补的表达方式</b><p>你的倾听和 TA 的分享恰到好处</p></div><div><span>🧭</span><b>一致的未来观</b><p>对成长与亲密关系有相近期待</p></div><div><span>🎧</span><b>共同兴趣</b><p>你们都收藏了 7 个相似兴趣</p></div></div></div><div className="profile-safety-actions"><button onClick={() => void onReport()}><Flag size={14} />举报</button><button onClick={() => void onBlock()}><Ban size={14} />屏蔽</button></div><div className="modal-actions"><button className="secondary"><X size={18} />暂时略过</button><button className="primary" disabled={sending} onClick={async () => { setSending(true); try { await onHeart() } finally { setSending(false) } }}>{sending ? <LoaderCircle className="spin" size={18} /> : <Heart size={18} fill="currentColor" />}发送心动</button></div></div></motion.div></motion.div>
+}
+
+function Onboarding({ onClose, onSave }: { onClose: () => void; onSave?: (traits: string[], frequency: number) => Promise<void> }) {
+  const [step, setStep] = useState(1)
+  const [selected, setSelected] = useState<string[]>(['真诚', '有边界感'])
+  const [frequency, setFrequency] = useState(55)
+  const [saving, setSaving] = useState(false)
+  const traits = ['真诚', '有边界感', '情绪稳定', '热爱生活', '有行动力', '幽默', '温柔', '保持好奇']
+  return <motion.div className="modal-backdrop onboarding-bg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><motion.div className="onboarding" initial={{ scale: .96 }} animate={{ scale: 1 }}><button className="modal-close" onClick={onClose}><X /></button><div className="onboard-side"><div className="brand light"><span><Sparkles size={19} /></span>同频</div><div><span className="eyebrow light-text">SOUL MAPPING</span><h2>不是寻找完美的人，<br />而是遇见真实的彼此。</h2><p>科学维度只是相遇的起点，真诚才是故事的开始。</p></div><div className="side-quote"><Quote size={20} /><p>所有好的关系，都始于一次勇敢的自我表达。</p></div></div><div className="onboard-main"><div className="progress-head"><span>建立你的同频画像</span><b>{step} / 3</b></div><div className="progress-track"><i style={{ width: `${step * 33.33}%` }} /></div>{step === 1 && <motion.div className="step-content" initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}><span className="step-icon"><User /></span><h2>先认识一下你</h2><p>这些信息帮助我们找到更适合你的校园伙伴</p><div className="form-grid"><label>你的昵称<input defaultValue="小满" /></label><label>出生年份<select defaultValue="2003"><option>2003</option><option>2004</option><option>2002</option></select></label><label className="full">所在学校<input placeholder="搜索你的大学" defaultValue="上海大学" /></label><label>专业<input defaultValue="数字媒体艺术" /></label><label>年级<select><option>大三</option><option>大二</option><option>大四</option><option>研究生</option></select></label></div></motion.div>}{step === 2 && <motion.div className="step-content" initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}><span className="step-icon"><Sparkles /></span><h2>你更看重什么？</h2><p>选择 2–5 个你期待对方拥有的特质</p><div className="trait-grid">{traits.map(t => <button className={selected.includes(t) ? 'selected' : ''} onClick={() => setSelected(s => s.includes(t) ? s.filter(x => x !== t) : [...s, t])} key={t}>{selected.includes(t) && <Check size={16} />}{t}</button>)}</div><label className="range-label"><span><b>理想的相处频率</b><small>每个人都有自己的舒适节奏</small></span><input type="range" value={frequency} onChange={e => setFrequency(Number(e.target.value))} /><div className="range-marks"><span>各自精彩</span><span>保持联系</span><span>时常陪伴</span></div></label></motion.div>}{step === 3 && <motion.div className="step-content final-step" initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}><div className="success-orbit"><Sparkles /><i /><i /></div><h2>你的同频画像已生成</h2><p>我们找到了 <b>24 位</b> 值得认识的校园伙伴</p><div className="result-chips"><span>成长型关系</span><span>慢热但真诚</span><span>高共情力</span></div><div className="privacy-note"><ShieldCheck /><div><b>隐私由你掌控</b><p>你的详细答案不会直接展示给其他人</p></div></div></motion.div>}<div className="step-actions">{step > 1 && <button className="text-btn" onClick={() => setStep(s => s - 1)}>上一步</button>}<button className="primary" disabled={saving} onClick={async () => { if (step < 3) return setStep(s => s + 1); setSaving(true); try { await onSave?.(selected, frequency); onClose() } finally { setSaving(false) } }}>{saving ? <LoaderCircle className="spin" size={17} /> : step < 3 ? <>继续 <ArrowRight size={17} /></> : <>查看我的匹配 <Sparkles size={17} /></>}</button></div></div></motion.div></motion.div>
+}
+
+function AuthModal({ onClose }: { onClose: () => void }) {
+  const [mode, setMode] = useState<'login' | 'register'>('login')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [nickname, setNickname] = useState('')
+  const [school, setSchool] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState('')
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!supabase) return setMessage('请先配置 Supabase 环境变量')
+    setBusy(true); setMessage('')
+    const result = mode === 'login'
+      ? await supabase.auth.signInWithPassword({ email, password })
+      : await supabase.auth.signUp({ email, password, options: { data: { nickname, school } } })
+    setBusy(false)
+    if (result.error) { const raw=result.error.message; const friendly=raw.toLowerCase().includes('user already registered')?'这个邮箱已经注册过，请切换到“登录”。':raw.toLowerCase().includes('email')&&raw.toLowerCase().includes('confirm')?'邮箱确认功能未完成，请检查验证邮件或让管理员在 Supabase Auth 中关闭邮箱确认。':raw.toLowerCase().includes('rate limit')?'注册请求过于频繁，请稍后再试。':raw; return setMessage(friendly) }
+    if (mode === 'register' && !result.data.session) return setMessage('账号已创建，但需要先完成邮箱验证。请检查收件箱、垃圾邮件，点击验证链接后再切换到“登录”。')
+    onClose()
+  }
+  return <motion.div className="modal-backdrop auth-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}><motion.div className="auth-modal" initial={{ y: 25, scale: .96 }} animate={{ y: 0, scale: 1 }} onClick={e => e.stopPropagation()}><button className="modal-close" onClick={onClose}><X /></button><div className="auth-art"><div className="brand light"><span><Sparkles size={19} /></span>同频</div><div><span className="eyebrow light-text">TONGPIN 18+</span><h2>让值得的相遇，<br />从真实开始。</h2><p>高校身份 · 安全社区 · 深度匹配</p></div><div className="auth-proof"><ShieldCheck /><span><b>隐私优先</b>你的邮箱不会公开展示</span></div></div><form className="auth-form" onSubmit={submit}><span className="section-kicker">WELCOME TO TONGPIN</span><h2>{mode === 'login' ? '欢迎回来' : '创建同频账号'}</h2><p>{mode === 'login' ? '登录后继续探索真实的校园连接' : '使用校园邮箱，开始建立你的同频画像'}</p>{mode === 'register' && <><label>昵称<input value={nickname} onChange={e => setNickname(e.target.value)} required maxLength={30} placeholder="大家怎么称呼你" /></label><label>学校<input value={school} onChange={e => setSchool(e.target.value)} required maxLength={80} placeholder="你所在的大学" /></label></>}<label>邮箱<input type="email" value={email} onChange={e => setEmail(e.target.value.trim())} required placeholder="name@example.com" /></label><label>密码<input type="password" minLength={6} value={password} onChange={e => setPassword(e.target.value)} required placeholder="至少 6 位字符" /></label>{message && <div className="auth-message">{message}</div>}<button className="primary auth-submit" disabled={busy}>{busy ? <LoaderCircle className="spin" /> : <>{mode === 'login' ? '登录' : '注册账号'} <ArrowRight size={17} /></>}</button><div className="auth-switch">{mode === 'login' ? '还没有账号？' : '已经注册？'}<button type="button" onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setMessage('') }}>{mode === 'login' ? '立即注册' : '返回登录'}</button></div>{!isSupabaseConfigured && <div className="demo-notice"><WifiOff size={16} /><span><b>当前是演示模式</b>配置 .env.local 后即可使用真实账户</span></div>}</form></motion.div></motion.div>
+}
+
+function App() {
+  const [view, setView] = useState<View>('home')
+  const [posts, setPosts] = useState(seedPosts)
+  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null)
+  const [matchPeople, setMatchPeople] = useState<Person[]>(people)
+  const [matchesLoading, setMatchesLoading] = useState(false)
+  const [profileBundle, setProfileBundle] = useState<ProfileBundle>()
+  const [showProfileEditor, setShowProfileEditor] = useState(false)
+  const [showLegal, setShowLegal] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('tongpin-sidebar') === 'collapsed')
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [locationEnabled, setLocationEnabled] = useState(false)
+  const [locating, setLocating] = useState(false)
+  const [discoveryRadius, setDiscoveryRadius] = useState(50)
+  const [nearbyPeople, setNearbyPeople] = useState<MatchPerson[]>([])
+  useEffect(() => { localStorage.setItem('tongpin-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded') }, [sidebarCollapsed])
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [notifications, setNotifications] = useState(true)
+  const [session, setSession] = useState<Session | null>(null)
+  const [showAuth, setShowAuth] = useState(false)
+  const [toast, setToast] = useState('')
+  const [insightPerson, setInsightPerson] = useState<(MatchPerson & { analysis?: Record<string, number>; topics?: string[] }) | null>(null)
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('campus-theme') as 'light' | 'dark') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'))
+  const title = useMemo(() => ({ home: '下午好，小满', matches: '为你找到的同频', preferences: '按偏好推荐', moments: '同频动态', assessment: '自我评测', anonymous: '匿名相遇', messages: '同频消息', account: '关系与安全', legal: '信任与安全中心', data: '数据与账号', admin: '平台审核', profile: '我的同频空间' })[view], [view])
+  useEffect(() => { document.documentElement.dataset.theme = theme; localStorage.setItem('campus-theme', theme) }, [theme])
+  const notify = (text: string) => { setToast(text); window.setTimeout(() => setToast(''), 2600) }
+  const syncProfileAndMatches = async (userId: string) => {
+    setMatchesLoading(true)
+    try { const [bundle, matches, intelligent] = await Promise.all([fetchProfileBundle(userId), fetchMatches(), fetchIntelligentMapped().catch(() => [])]); setProfileBundle(bundle); setShowLegal(!bundle.profile.accepted_terms_at || !bundle.profile.birth_date); setMatchPeople(intelligent.length ? intelligent : matches.length ? matches : people) } catch (error) { notify(error instanceof Error ? error.message : '真实匹配加载失败') } finally { setMatchesLoading(false) }
+  }
+  const syncPosts = async (userId?: string) => {
+    if (!isSupabaseConfigured) return
+    try { const remote = await fetchSocialPosts(userId); setPosts(remote) } catch (error) { notify(error instanceof Error ? error.message : '动态加载失败') }
+  }
+  useEffect(() => {
+    if (!supabase) return
+    supabase.auth.getSession().then(({ data }) => { setSession(data.session); if (data.session) { void syncPosts(data.session.user.id); void syncProfileAndMatches(data.session.user.id) } })
+    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => { setSession(nextSession); if (nextSession) window.setTimeout(() => { void syncPosts(nextSession.user.id); void syncProfileAndMatches(nextSession.user.id) }, 0) })
+    return () => data.subscription.unsubscribe()
+  }, [])
+  const requireUser = () => { if (!session?.user) { setShowAuth(true); return null } return session.user }
+  const addPost = async (text: string, image?: File) => {
+    const user = requireUser()
+    if (isSupabaseConfigured && user) { try { await createPost(user, text, image); await syncPosts(user.id); notify('动态发布成功') } catch (error) { notify(error instanceof Error ? error.message : '发布失败') }; return }
+    if (isSupabaseConfigured) return
+    setPosts(p => [{ id: Date.now(), name: '小满', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop', school: '上海大学', time: '刚刚', text, tags: ['我的此刻'], likes: 0, liked: false, comments: [] }, ...p]); notify('演示动态已发布')
+  }
+  const flagPost = async (id:string|number) => { const user=requireUser();if(!user)return;try{await reportPost(String(id),'不恰当的动态内容');notify('动态举报已提交')}catch(error){notify(error instanceof Error?error.message:'举报失败')} }
+  const removePost = async (id: string | number) => { const user=requireUser();if(!user)return;try{await deletePost(String(id),user.id);setPosts(x=>x.filter(p=>p.id!==id));notify('动态已删除')}catch(error){notify(error instanceof Error?error.message:'删除失败')} }
+  const like = async (id: string | number) => { const current = posts.find(p => p.id === id); if (!current) return; if (isSupabaseConfigured) { const user = requireUser(); if (!user) return; try { await togglePostLike(String(id), user.id, current.liked) } catch (error) { return notify(error instanceof Error ? error.message : '操作失败') } } setPosts(ps => ps.map(p => p.id === id ? { ...p, liked: !p.liked, likes: p.likes + (p.liked ? -1 : 1) } : p)) }
+  const comment = async (id: string | number, text: string) => { if (isSupabaseConfigured) { const user = requireUser(); if (!user) return; try { await createComment(String(id), user.id, text); await syncPosts(user.id) } catch (error) { notify(error instanceof Error ? error.message : '评论失败') }; return } setPosts(ps => ps.map(p => p.id === id ? { ...p, comments: [...p.comments, { id: Date.now(), name: '小满', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop', text }] } : p)) }
+  const signOut = async () => { await supabase?.auth.signOut(); setSession(null); setPosts(seedPosts); notify('已安全退出') }
+  const safetyPerson = async (person: Person, action: 'report' | 'block') => {
+    const user = requireUser(); const targetId = 'userId' in person ? person.userId : undefined; if (!user || !targetId) return notify('展示资料无法执行此操作')
+    try { if (action === 'block') { await blockUser(targetId); setMatchPeople(items => items.filter(item => !('userId' in item) || item.userId !== targetId)); notify(`已屏蔽 ${person.name}`) } else { await reportUser(user.id, targetId, '不恰当的个人资料'); notify('举报已提交，我们会尽快审核') } setSelectedPerson(null) } catch (error) { notify(error instanceof Error ? error.message : '操作失败') }
+  }
+  const locateAndDiscover = async () => { const user=requireUser();if(!user)return;if(!navigator.geolocation)return notify('当前浏览器不支持地理定位');setLocating(true);navigator.geolocation.getCurrentPosition(async position=>{try{await saveApproximateLocation(position.coords.latitude,position.coords.longitude,Math.round(position.coords.accuracy));setLocationEnabled(true);setNearbyPeople(await fetchNearbyMatches(discoveryRadius));notify('附近发现已开启，仅保存模糊位置')}catch(error){notify(error instanceof Error?error.message:'附近发现开启失败')}finally{setLocating(false)}},error=>{setLocating(false);notify(error.code===1?'你没有允许位置权限，可随时在浏览器设置中开启':'暂时无法获取位置')},{enableHighAccuracy:false,timeout:10000,maximumAge:300000}) }
+  const updateRadius = (value:number) => {setDiscoveryRadius(value);if(locationEnabled)void fetchNearbyMatches(value).then(setNearbyPeople).catch(error=>notify(error instanceof Error?error.message:'附近推荐更新失败'))}
+  const heartPerson = async (person: Person) => {
+    const user = requireUser(); if (!user) return
+    const targetId = 'userId' in person ? person.userId : undefined
+    if (!targetId) { notify('该用户是展示资料，真实用户注册后即可发送心动'); setSelectedPerson(null); return }
+    try { const result = await sendHeart(targetId); notify(result.matched ? `你和${person.name}互相心动了！` : `已向${person.name}发送心动`); if (result.matched) setView('messages'); setSelectedPerson(null) } catch (error) { notify(error instanceof Error ? error.message : '发送心动失败') }
+  }
+
+  const go = (target: View) => { setView(target); setMobileMenuOpen(false) }
+  const userAvatar = profileBundle?.profile.avatar_url || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop'
+  const discoveryPeople:MatchPerson[] = nearbyPeople.length ? nearbyPeople : matchPeople.slice(0,8).map(person => 'userId' in person ? person : {...person,id:String(person.id),userId:'',reasons:['兴趣方向彼此呼应','生活节奏相近'],verified:false,distanceKm:Number.parseFloat(person.distance)||2.4,bearing:(Number(person.id)*67)%360})
+  return <div className={`app-shell ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+    <aside className={`sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`} aria-label="主导航">
+      <div className="sidebar-head"><button className="brand" onClick={() => go('home')} aria-label="返回首页"><span><Sparkles size={18} /></span><div><b>同频</b><small>REAL CONNECTIONS</small></div></button><button className="collapse-toggle" onClick={() => setSidebarCollapsed(x => !x)} aria-label={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}>{sidebarCollapsed ? <PanelLeftOpen /> : <PanelLeftClose />}</button><button className="mobile-close" onClick={() => setMobileMenuOpen(false)} aria-label="关闭菜单"><X /></button></div>
+      <div className="sidebar-scroll">{navGroups.map(group => <section className="nav-group" key={group.label}><h3>{group.label}</h3><nav>{group.items.map(item => <button title={sidebarCollapsed ? item.label : undefined} aria-current={view === item.id ? 'page' : undefined} key={item.id} className={view === item.id ? 'active' : ''} onClick={() => go(item.id)}><span className="nav-icon"><item.icon size={19} /></span><span className="nav-label">{item.label}</span>{item.badge && <em>{item.badge}</em>}</button>)}</nav></section>)}</div>
+      <div className="sidebar-bottom"><button className="side-extra" onClick={() => session ? go('data') : setShowAuth(true)}><Settings size={18}/><span>数据与账号</span></button><button className="side-extra" onClick={() => go('legal')}><LifeBuoy size={18}/><span>帮助与条款</span></button><div className="side-profile-wrap"><button className="side-profile" onClick={() => setProfileMenuOpen(x => !x)} aria-expanded={profileMenuOpen}><Avatar src={userAvatar} size={38} online={Boolean(session)} /><div><b>{profileBundle?.profile.nickname || session?.user.user_metadata.nickname || '访客'}</b><span>{profileBundle?.profile.life_stage || (session ? '已登录' : '演示模式')}</span></div><ChevronDown size={16} className={profileMenuOpen ? 'rotate' : ''} /></button>{profileMenuOpen && <motion.div className="profile-popover" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}}><button onClick={() => go('profile')}><User/>我的主页</button><button onClick={() => session ? go('data') : setShowAuth(true)}><Settings/>账号设置</button><button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>{theme === 'light' ? <Moon/> : <Sun/>}{theme === 'light' ? '深色模式' : '浅色模式'}</button><i />{session ? <button className="logout" onClick={signOut}><LogOut/>退出登录</button> : <button onClick={() => setShowAuth(true)}><LogIn/>登录同频</button>}</motion.div>}</div></div>
+    </aside>{mobileMenuOpen && <button className="sidebar-scrim" aria-label="关闭菜单" onClick={() => setMobileMenuOpen(false)} />}
+    <main><header className="topbar"><div><div className="mobile-title"><button className="mobile-menu-button" onClick={()=>setMobileMenuOpen(true)} aria-label="打开导航菜单"><Menu/></button><p className="mobile-brand"><Sparkles size={17} />同频</p></div><h1>{title} <span>👋</span></h1>{view === 'home' && <p>今天也有新的故事，正在靠近你。</p>}</div><div className="top-actions"><button className="icon-btn theme-toggle" aria-label={theme === 'light' ? '切换深色模式' : '切换浅色模式'} onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>{theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}</button><label className="search"><Search size={18} /><input placeholder="搜索校园、兴趣或用户" /><kbd>⌘ K</kbd></label><button className="icon-btn notification" onClick={() => { setNotifications(false); if(session)setShowNotifications(true) }}><Bell size={20} />{notifications && <i />}</button>{session ? <button className="session-pill" onClick={signOut}><LogOut size={15} />退出</button> : <button className="session-pill" onClick={() => setShowAuth(true)}><LogIn size={15} />登录</button>}<Avatar src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop" size={38} /></div></header>
+      <AnimatePresence mode="wait">
+        {view === 'home' && <motion.div className="page discovery-page" key="home" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><Suspense fallback={<div className="discovery-loading"><LoaderCircle className="spin"/></div>}><DiscoveryMap people={discoveryPeople} located={locationEnabled} locating={locating} radius={discoveryRadius} onRadius={updateRadius} onLocate={()=>void locateAndDiscover()} onOpen={setSelectedPerson} onHeart={person=>void heartPerson(person)}/></Suspense><section className="section-head"><div><span className="section-kicker">DAILY PICKS</span><h2>今日心动推荐</h2></div><button onClick={() => setView('matches')}>查看全部 <ChevronRight size={17} /></button></section><div className="match-grid">{people.slice(0, 3).map(p => <MatchCard key={p.id} person={p} onOpen={() => setSelectedPerson(p)} onInsight={'userId' in p && 'reasons' in p ? () => setInsightPerson(p as unknown as MatchPerson) : undefined} />)}</div><section className="section-head moment-title"><div><span className="section-kicker">CAMPUS MOMENTS</span><h2>同频的人，此刻在做什么</h2></div><button onClick={() => setView('moments')}>进入广场 <ChevronRight size={17} /></button></section><div className="home-feed">{posts.slice(0, 2).map(p => <PostCard key={p.id} post={p} onLike={() => like(p.id)} onComment={t => comment(p.id, t)} onDelete={('authorId' in p && p.authorId===session?.user.id)?()=>void removePost(p.id):undefined} onReport={('authorId' in p && p.authorId!==session?.user.id)?()=>void flagPost(p.id):undefined} />)}</div></motion.div>}
+        {view === 'matches' && <motion.div className="page" key="matches" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><div className="filter-bar"><div><button className="filter active">为你精选</button><button className="filter">今日新加入</button><button className="filter">附近校园</button></div><button className="secondary"><SlidersHorizontal size={17} />筛选偏好</button></div><div className="match-insight glass-card"><div className="insight-icon"><Sparkles /></div><div><b>匹配雷达已更新</b><p>根据你最近完善的「关系期待」，新增 6 位高契合用户</p></div><button onClick={() => setShowOnboarding(true)}>查看我的画像 <ChevronRight size={16} /></button></div>{matchesLoading ? <div className="match-skeleton-grid">{[1,2,3].map(x => <div className="match-skeleton" key={x}><i /><b /><span /></div>)}</div> : <div className="match-grid full">{matchPeople.map(p => <MatchCard key={p.id} person={p} onOpen={() => setSelectedPerson(p)} onInsight={'userId' in p && 'reasons' in p ? () => setInsightPerson(p as unknown as MatchPerson) : undefined} />)}</div>}</motion.div>}
+        {view === 'assessment' && <motion.div className="page" key="assessment" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0}}>{session?<Suspense fallback={<PageLoading label="正在打开自我评测"/>}><AssessmentCenter session={session} onSaved={()=>{notify('自我评测已保存，匹配已更新');setView('matches')}}/></Suspense>:<div className="assessment-locked"><Sparkles/><h2>登录后开始自我评测</h2><p>完成评测后，我们会根据你的性格、生活节奏和关系期待生成更透明的匹配分析。</p><button className="primary" onClick={()=>setShowAuth(true)}>登录并开始评测 <ArrowRight/></button></div>}</motion.div>}
+        {view === 'preferences' && <motion.div className="page preference-page" key="preferences" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><Suspense fallback={<PageLoading label="正在理解你的偏好"/>}><PreferenceRecommendations session={session} onRequireAuth={() => setShowAuth(true)} onOpen={setSelectedPerson} /></Suspense></motion.div>}
+        {view === 'moments' && <motion.div className="page moments-page" key="moments" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><div className="feed-column"><Composer onPost={addPost} authenticated={Boolean(session) || !isSupabaseConfigured} /><div className="feed-tabs"><button className="active">推荐</button><button>关注</button><button>附近</button></div>{posts.map(p => <PostCard key={p.id} post={p} onLike={() => like(p.id)} onComment={t => comment(p.id, t)} onDelete={('authorId' in p && p.authorId===session?.user.id)?()=>void removePost(p.id):undefined} onReport={('authorId' in p && p.authorId!==session?.user.id)?()=>void flagPost(p.id):undefined} />)}</div><aside className="right-rail"><div className="rail-card"><h3><Users size={18} />可能认识的人</h3>{people.slice(0, 3).map(p => <div className="mini-person" key={p.id}><Avatar src={p.avatar} size={38} /><div><b>{p.name}</b><span>{p.school}</span></div><button>关注</button></div>)}</div><div className="rail-card"><h3><Zap size={18} />校园热榜</h3>{['# 毕业前一定要做的事', '# 我镜头下的校园', '# 最近单曲循环', '# 周末搭子计划'].map((x, i) => <div className="trend" key={x}><b>0{i + 1}</b><span>{x}<small>{12.8 - i * 2.1}k 参与</small></span></div>)}</div><div className="safety-card"><ShieldCheck /><div><b>同频安全中心</b><p>真实高校认证 · 隐私保护</p></div></div></aside></motion.div>}
+        {view === 'anonymous' && <motion.div className="page anonymous-page" key="anonymous" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0}}><Suspense fallback={<PageLoading label="正在连接匿名信号"/>}><AnonymousChat session={session} onRequireAuth={()=>setShowAuth(true)}/></Suspense></motion.div>}
+        {view === 'messages' && <motion.div className="page chat-page" key="messages" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><Suspense fallback={<PageLoading label="正在打开同频消息"/>}><ChatPanel session={session} onRequireAuth={() => setShowAuth(true)} /></Suspense></motion.div>}
+        {view === 'legal' && <motion.div className="page" key="legal" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}}><Suspense fallback={<PageLoading/>}><LegalDocuments/></Suspense></motion.div>}
+        {view === 'data' && session && <motion.div className="page" key="data" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}}><Suspense fallback={<PageLoading/>}><DataRights session={session}/></Suspense></motion.div>}
+        {view === 'account' && <motion.div className="page" key="account" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}}><Suspense fallback={<PageLoading/>}><AccountCenter session={session} isAdmin={profileBundle?.profile.is_admin??false} onAdmin={()=>setView('admin')}/></Suspense></motion.div>}
+        {view === 'admin' && profileBundle?.profile.is_admin && <motion.div className="page" key="admin" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}}><Suspense fallback={<PageLoading/>}><AdminPanel/></Suspense></motion.div>}
+        {view === 'profile' && <motion.div className="page" key="profile" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><section className="profile-hero glass-card"><div className="profile-cover" /><div className="profile-info"><div className="profile-avatar"><Avatar src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop" size={104} /><button><Camera size={16} /></button></div><div><h2>{profileBundle?.profile.nickname ?? '小满'} <ShieldCheck size={19} /></h2><p>{profileBundle?.profile.school ?? '上海大学'} · {profileBundle?.profile.major ?? '数字媒体艺术'} · {profileBundle?.profile.grade ?? '大三'}</p><div className="tag-row"><span>INFJ</span><span>独立电影</span><span>展览</span><span>咖啡地图</span></div></div><button className="secondary" onClick={() => session ? setShowProfileEditor(true) : setShowAuth(true)}><Settings size={17} />编辑资料</button></div></section><div className="profile-layout"><section><div className="about-card glass-card"><h3>关于我</h3><p>{profileBundle?.profile.bio ?? '在学习如何认真生活，也期待认识愿意分享真实感受的人。喜欢独立电影、逛展，以及在城市里寻找好喝的手冲。'}</p><div className="details"><span><MapPin />来自杭州，现居上海</span><span><BookOpen />最近在读《山茶文具店》</span><span><Coffee />理想约会：旧书店 + 散步</span></div></div><div className="about-card glass-card"><h3>我的动态 <small>12</small></h3><div className="photo-grid">{seedPosts.filter(p => p.image).map(p => <img key={p.id} src={p.image} alt="我的动态" />)}<div className="photo-placeholder">+10</div></div></div></section><aside><div className="completion-card"><div className="circle-progress"><span>82<small>%</small></span></div><h3>画像完成度</h3><p>再回答 3 个问题，匹配会更精准</p><button className="primary" onClick={() => setShowOnboarding(true)}>继续完善</button></div><div className="rail-card stat-card"><h3>我的足迹</h3><div><span><b>28</b>收到心动</span><span><b>12</b>互相同频</span><span><b>36</b>动态获赞</span></div></div></aside></div></motion.div>}
+      </AnimatePresence>
+    </main>
+    <nav className="mobile-nav" aria-label="移动导航">{mobileNav.map(item => <button key={item.id} aria-current={view === item.id ? 'page' : undefined} className={view === item.id ? 'active' : ''} onClick={() => go(item.id)}><span className="mobile-nav-icon"><item.icon size={21} />{item.badge && <i>{item.badge}</i>}</span><span>{item.id === 'profile' ? '我的' : item.label}</span></button>)}</nav>
+    {!isSupabaseConfigured && <div className="demo-badge"><WifiOff size={13} />演示模式</div>}{toast && <motion.div className="toast" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>{toast}</motion.div>}<AnimatePresence>{selectedPerson && <ProfileModal person={selectedPerson} onClose={() => setSelectedPerson(null)} onHeart={() => heartPerson(selectedPerson)} onReport={() => safetyPerson(selectedPerson, 'report')} onBlock={() => safetyPerson(selectedPerson, 'block')} />}{showOnboarding && <Onboarding onClose={() => setShowOnboarding(false)} onSave={async (traits, frequency) => { if (!session || !supabase) { setShowAuth(true); return } const { error } = await supabase.from('preferences').update({ desired_traits: traits, preferred_values: traits, interaction_frequency: frequency, updated_at: new Date().toISOString() }).eq('user_id', session.user.id); if (error) throw error; await syncProfileAndMatches(session.user.id); notify('同频画像已保存') }} />}{showProfileEditor && session && <Suspense fallback={<div className="modal-backdrop"><LoaderCircle className="spin" /></div>}><ProfileEditor user={session.user} onClose={() => setShowProfileEditor(false)} onSaved={() => { void syncProfileAndMatches(session.user.id); notify('资料已更新') }} /></Suspense>}{showLegal&&session&&<Suspense fallback={null}><LegalModal session={session} required={!profileBundle?.profile.accepted_terms_at} onClose={()=>setShowLegal(false)} onAccepted={()=>{setShowLegal(false);void syncProfileAndMatches(session.user.id);notify('年龄与协议确认成功')}}/></Suspense>}{showNotifications&&session&&<Suspense fallback={null}><NotificationPanel userId={session.user.id} onClose={()=>setShowNotifications(false)}/></Suspense>}{insightPerson&&<Suspense fallback={<PageLoading label="正在生成匹配分析"/>}><MatchInsights person={insightPerson} onClose={()=>setInsightPerson(null)} onChanged={()=>{void syncProfileAndMatches(session?.user.id??'')}}/></Suspense>}{showAuth && <AuthModal onClose={() => setShowAuth(false)} />}</AnimatePresence>
+  </div>
+}
+
+export default App
