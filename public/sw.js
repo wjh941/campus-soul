@@ -1,7 +1,7 @@
-const VERSION='tongpin-v1';
+const VERSION='tongpin-v2';
 const BASE=new URL('./',self.registration.scope).pathname;
 const APP_SHELL=[BASE,`${BASE}manifest.webmanifest`,`${BASE}favicon.svg`];
-self.addEventListener('install',event=>{event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(APP_SHELL)));self.skipWaiting()});
+self.addEventListener('install',event=>{event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(APP_SHELL)))});
 self.addEventListener('message',event=>{if(event.data?.type==='SKIP_WAITING')self.skipWaiting()});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==VERSION).map(key=>caches.delete(key)))));self.clients.claim()});
 self.addEventListener('fetch',event=>{
