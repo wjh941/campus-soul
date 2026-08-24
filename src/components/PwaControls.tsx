@@ -1,0 +1,13 @@
+import { useEffect, useState } from 'react'
+import { Download, RefreshCw, Share, Smartphone, X } from 'lucide-react'
+
+type InstallPromptEvent=Event&{prompt:()=>Promise<void>;userChoice:Promise<{outcome:'accepted'|'dismissed'}>}
+export default function PwaControls(){
+ const[prompt,setPrompt]=useState<InstallPromptEvent|null>(null),[installed,setInstalled]=useState(()=>matchMedia('(display-mode: standalone)').matches),[showGuide,setShowGuide]=useState(false),[waiting,setWaiting]=useState<ServiceWorker|null>(null),[online,setOnline]=useState(()=>navigator.onLine)
+ const isiOS=/iphone|ipad|ipod/i.test(navigator.userAgent)
+ useEffect(()=>{const before=(event:Event)=>{event.preventDefault();setPrompt(event as InstallPromptEvent)},done=()=>setInstalled(true),up=()=>setOnline(true),down=()=>setOnline(false);addEventListener('beforeinstallprompt',before);addEventListener('appinstalled',done);addEventListener('online',up);addEventListener('offline',down);navigator.serviceWorker?.getRegistration().then(reg=>{if(reg?.waiting)setWaiting(reg.waiting);reg?.addEventListener('updatefound',()=>{const worker=reg.installing;worker?.addEventListener('statechange',()=>{if(worker.state==='installed'&&navigator.serviceWorker.controller)setWaiting(worker)})})});return()=>{removeEventListener('beforeinstallprompt',before);removeEventListener('appinstalled',done);removeEventListener('online',up);removeEventListener('offline',down)}},[])
+ const install=async()=>{if(prompt){await prompt.prompt();const result=await prompt.userChoice;if(result.outcome==='accepted')setInstalled(true);setPrompt(null)}else setShowGuide(true)}
+ const update=()=>{waiting?.postMessage({type:'SKIP_WAITING'});location.reload()}
+ if(installed&&!waiting&&!showGuide)return null
+ return <>{!installed&&<button className="icon-btn pwa-install" onClick={()=>void install()} aria-label="安装同频到桌面" title="安装到桌面"><Download/></button>}{waiting&&<div className="pwa-update"><span><RefreshCw/>发现新版本</span><button onClick={update}>立即更新</button></div>}{showGuide&&<div className="pwa-guide-backdrop" onClick={()=>setShowGuide(false)}><section className="pwa-guide" onClick={e=>e.stopPropagation()}><button className="modal-close" onClick={()=>setShowGuide(false)}><X/></button><Smartphone/><h2>把同频添加到桌面</h2>{isiOS?<p>点击 Safari 底部的 <b><Share/>分享</b>，然后选择“添加到主屏幕”。</p>:<p>打开浏览器菜单，选择“安装应用”或“添加到主屏幕”。</p>}<small>{online?'安装后可更快打开，并缓存基础页面。':'当前处于离线状态，恢复网络后再完成首次安装。'}</small><button className="primary" onClick={()=>setShowGuide(false)}>我知道了</button></section></div>}</>
+}
