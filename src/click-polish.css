@@ -1,5 +1,5 @@
 /* Global tactile feedback — visual only, no layout-shifting interaction. */
-:root{--press-scale:.975;--focus-ring:0 0 0 3px color-mix(in srgb,var(--purple) 22%,transparent);--focus-line:color-mix(in srgb,var(--purple) 62%,var(--line));--tap-glow:color-mix(in srgb,var(--purple) 11%,transparent)}
+:root{--press-scale:.975;--focus-ring:0 0 0 3px color-mix(in srgb,var(--purple) 22%,transparent);--focus-line:color-mix(in srgb,var(--purple) 62%,var(--line));--tap-glow:color-mix(in srgb,var(--purple) 11%,transparent);--spring:cubic-bezier(.2,1.45,.35,1)}
 :where(button,a,[role="button"],summary,input,textarea,select){-webkit-tap-highlight-color:transparent}
 :where(button,a,[role="button"],summary){position:relative;isolation:isolate}
 :where(button,a,[role="button"],summary):focus-visible{outline:2px solid var(--focus-line)!important;outline-offset:3px;box-shadow:var(--focus-ring)}
@@ -8,9 +8,14 @@
 :where(button):not(:disabled){cursor:pointer}
 :where(button):disabled{cursor:not-allowed;opacity:.54;filter:saturate(.72);transform:none!important}
 :where(button,[role="button"],summary):active{transition-duration:45ms!important}
-:where(button):not(:disabled):active,:where([role="button"]):active,:where(summary):active{transform:scale(var(--press-scale))!important;filter:saturate(1.08)}
+:where(button):not(:disabled):active,:where([role="button"]):active,:where(summary):active{transform:scale(.955)!important;filter:saturate(1.08);transition:transform 180ms var(--spring)!important}
+:where(button):not(:disabled):active{animation:press-overbounce 360ms var(--spring)}
+@keyframes press-overbounce{0%{transform:scale(1)}38%{transform:scale(.945)}72%{transform:scale(1.012)}100%{transform:scale(1)}}
 :where(.primary,.secondary,.icon-btn,.filter,.account-tabs button,.preference-chips button,.assessment-chips button,.editor-tags button,.browser-notify,.mark-read,.load-more){overflow:hidden;transform-origin:center}
 :where(.primary,.secondary,.icon-btn,.filter,.account-tabs button,.preference-chips button,.assessment-chips button,.editor-tags button,.browser-notify,.mark-read,.load-more)::before{content:"";position:absolute;z-index:-1;inset:50%;border-radius:inherit;background:var(--tap-glow);opacity:0;transform:translate(-50%,-50%) scale(.2);transition:inset .22s,opacity .18s,transform .22s;pointer-events:none}
+:where(button,.side-extra,.side-profile,.mobile-menu-button)::after{content:"";position:absolute;left:var(--ripple-x,50%);top:var(--ripple-y,50%);width:12px;height:12px;border-radius:50%;background:color-mix(in srgb,#fff 35%,var(--purple));opacity:0;transform:translate(-50%,-50%) scale(0);pointer-events:none;z-index:-1}
+:where(button,.side-extra,.side-profile,.mobile-menu-button).ripple-active::after{animation:ripple-fall 480ms ease-out forwards}
+@keyframes ripple-fall{0%{opacity:.4;transform:translate(-50%,-50%) scale(0)}70%{opacity:.13}100%{opacity:0;transform:translate(-50%,-50%) scale(18)}}
 :where(.primary,.secondary,.icon-btn,.filter,.account-tabs button,.preference-chips button,.assessment-chips button,.editor-tags button,.browser-notify,.mark-read,.load-more):not(:disabled):active::before{inset:-10%;opacity:1;transform:none;transition-duration:50ms}
 :where(button) svg{flex:none;transition:transform .16s cubic-bezier(.2,.8,.2,1)}
 :where(button):not(:disabled):active>svg{transform:scale(.88)}
@@ -33,6 +38,6 @@
  :root{--press-scale:.96}
 }
 @media(prefers-reduced-motion:reduce){
- :where(button,a,[role="button"],summary),:where(button) svg,:where(.primary,.secondary,.icon-btn)::before{transition:none!important}
+ :where(button,a,[role="button"],summary),:where(button) svg,:where(.primary,.secondary,.icon-btn)::before,:where(button)::after{transition:none!important;animation:none!important}
  :where(button):not(:disabled):active,:where([role="button"]):active{transform:none!important}
 }

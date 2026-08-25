@@ -201,6 +201,21 @@ function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => (safeStorage.get('campus-theme') as 'light' | 'dark') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'))
   const title = useMemo(() => ({ home: profileBundle?.profile.nickname?`你好，${profileBundle.profile.nickname}`:'欢迎来到同频', matches: '为你找到的同频', preferences: '按偏好推荐', moments: '同频动态', assessment: '自我评测', anonymous: '匿名相遇', messages: '同频消息', membership:'会员与支持', account: '关系与安全', legal: '信任与安全中心', data: '数据与账号', admin: '平台审核', profile: '我的同频空间' })[view], [view,profileBundle?.profile.nickname])
   useEffect(() => { document.documentElement.dataset.theme = theme; safeStorage.set('campus-theme', theme) }, [theme])
+  useEffect(() => {
+    const press = (event: PointerEvent) => {
+      const target = (event.target as HTMLElement).closest<HTMLElement>('button:not(:disabled),[role="button"]:not([aria-disabled="true"])')
+      if (!target) return
+      const rect = target.getBoundingClientRect()
+      target.style.setProperty('--ripple-x', `${event.clientX - rect.left}px`)
+      target.style.setProperty('--ripple-y', `${event.clientY - rect.top}px`)
+      target.classList.remove('ripple-active')
+      void target.offsetWidth
+      target.classList.add('ripple-active')
+      window.setTimeout(() => target.classList.remove('ripple-active'), 480)
+    }
+    document.addEventListener('pointerdown', press, { passive: true })
+    return () => document.removeEventListener('pointerdown', press)
+  }, [])
   useEffect(()=>{const pop=()=>setView(viewFromUrl());addEventListener('popstate',pop);return()=>removeEventListener('popstate',pop)},[])
   useEffect(()=>{document.title=`${title} · 同频`;const url=new URL(location.href);if(view==='home')url.searchParams.delete('view');else url.searchParams.set('view',view);history.replaceState({view},'',url)},[title,view])
   useEffect(()=>{const up=()=>{setOnline(true);window.dispatchEvent(new CustomEvent('tongpin:reconnected'))},down=()=>setOnline(false);addEventListener('online',up);addEventListener('offline',down);return()=>{removeEventListener('online',up);removeEventListener('offline',down)}},[])
