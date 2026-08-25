@@ -112,6 +112,10 @@ export type Database = {
         Update: never
         Relationships: []
       }
+      membership_plans:{Row:{id:string;name:string;description:string;price_cents:number;billing_period:string;entitlements:Json;active:boolean;sort_order:number;created_at:string};Insert:never;Update:never;Relationships:[]}
+      subscriptions:{Row:{id:string;user_id:string;plan_id:string;status:string;starts_at:string;ends_at:string;auto_renew:boolean;provider:string|null;provider_subscription_id:string|null;created_at:string;updated_at:string};Insert:never;Update:never;Relationships:[]}
+      orders:{Row:{id:string;user_id:string;plan_id:string|null;amount_cents:number;currency:string;status:string;provider:string|null;provider_order_id:string|null;idempotency_key:string;created_at:string;paid_at:string|null};Insert:never;Update:never;Relationships:[]}
+      support_tickets:{Row:{id:string;user_id:string;category:string;subject:string;body:string;status:string;priority:string;created_at:string;updated_at:string};Insert:{id?:string;user_id:string;category:string;subject:string;body:string;status?:string;priority?:string;created_at?:string;updated_at?:string};Update:{status?:string;priority?:string;updated_at?:string};Relationships:[]}
       conversation_reads: {
         Row: { match_id: string; user_id: string; last_read_at: string }
         Insert: { match_id: string; user_id: string; last_read_at?: string }
@@ -121,6 +125,11 @@ export type Database = {
     }
     Views: { [_ in never]: never }
     Functions: {
+      get_my_membership:{Args:Record<string,never>;Returns:Json}
+      get_my_admirers:{Args:Record<string,never>;Returns:{user_id:string;nickname:string;avatar_url:string|null;school:string;created_at:string;can_view:boolean}[]}
+      create_pending_order:{Args:{chosen_plan:string};Returns:string}
+      join_waitlist:{Args:{contact_email:string;contact_city?:string|null;contact_school?:string|null;referral?:string|null;accepted?:boolean};Returns:undefined}
+      track_product_event:{Args:{chosen_event:string;properties?:Json};Returns:undefined}
       send_heart: { Args: { target_user: string }; Returns: { matched: boolean; match_id: string | null }[] }
       get_match_recommendations: { Args: { result_limit?: number }; Returns: { user_id: string; nickname: string; avatar_url: string | null; school: string; major: string | null; birth_year: number | null; personality: string | null; bio: string | null; interests: string[]; lifestyle: string[]; relationship_values: string[]; verified: boolean; overall_score: number; interest_score: number; value_score: number; lifestyle_score: number; reasons: string[] }[] }
       get_preference_recommendations: { Args: { page_size?: number; page_offset?: number }; Returns: { user_id: string; nickname: string; avatar_url: string | null; school: string; major: string | null; birth_year: number | null; personality: string | null; bio: string | null; interests: string[]; lifestyle: string[]; relationship_values: string[]; verified: boolean; overall_score: number; interest_score: number; value_score: number; lifestyle_score: number; reasons: string[] }[] }

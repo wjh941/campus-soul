@@ -6,6 +6,7 @@ import './interactions.css'
 import './health.css'
 import './executive.css'
 import './click-polish.css'
+import './commerce.css'
 import App from './App.tsx'
 import AppErrorBoundary from './components/AppErrorBoundary.tsx'
 
