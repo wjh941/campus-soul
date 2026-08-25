@@ -56,21 +56,25 @@ const seedPosts: Post[] = [
   { id: 3, name: '顾南乔', avatar: people[2].avatar, school: '华东师范大学', time: '昨天 22:14', text: '第一次做陶，杯子歪歪扭扭，但手掌记住了泥土的温度。接受不完美，也是很重要的课题吧。', image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=1000&auto=format&fit=crop', tags: ['生活碎片', '手作'], likes: 203, liked: false, comments: [] },
 ]
 
-const navGroups = [
-  { label: '探索', items: [
-    { id: 'home' as View, label: '首页', icon: Home },
-    { id: 'matches' as View, label: '心动匹配', icon: Sparkles, badge: '12' },
-    { id: 'preferences' as View, label: '偏好推荐', icon: Target },
-    { id: 'assessment' as View, label: '自我评测', icon: Sparkles },
+type NavItem={id:View;label:string;icon:typeof Home;badge?:string;step?:string;featured?:boolean}
+type NavGroup={label:string;hint:string;items:NavItem[]}
+const navGroups:NavGroup[] = [
+  { label: '同频旅程', hint:'认识自己，再遇见彼此', items: [
+    { id: 'home' as View, label: '发现首页', icon: Home },
+    { id: 'assessment' as View, label: '认识自己', icon: Sparkles, step:'01' },
+    { id: 'preferences' as View, label: '表达期待', icon: Target, step:'02' },
+    { id: 'matches' as View, label: '遇见同频', icon: Heart, badge: '12', step:'03', featured:true },
+  ]},
+  { label: '互动空间', hint:'动态、匿名与真实连接', items: [
     { id: 'moments' as View, label: '同频动态', icon: Compass },
-  ]},
-  { label: '连接', items: [
     { id: 'anonymous' as View, label: '匿名相遇', icon: VenetianMask },
-    { id: 'messages' as View, label: '消息', icon: MessageCircle, badge: '3' },
-    { id: 'membership' as View, label: '会员与支持', icon: Coffee },
-    { id: 'profile' as View, label: '我的主页', icon: User },
+    { id: 'messages' as View, label: '我的消息', icon: MessageCircle, badge: '3' },
   ]},
-  { label: '支持', items: [
+  { label: '我的同频', hint:'资料与会员权益', items: [
+    { id: 'profile' as View, label: '个人主页', icon: User },
+    { id: 'membership' as View, label: '会员与支持', icon: Coffee },
+  ]},
+  { label: '安全与帮助', hint:'关系管理和平台规则', items: [
     { id: 'account' as View, label: '关系与安全', icon: ShieldCheck },
     { id: 'legal' as View, label: '信任中心', icon: BookOpen },
   ]},
@@ -181,6 +185,7 @@ function App() {
   const [showNotifications, setShowNotifications] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => safeStorage.get('tongpin-sidebar') === 'collapsed')
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const [navOpen,setNavOpen]=useState<Record<string,boolean>>(()=>Object.fromEntries(navGroups.map(group=>[group.label,true])))
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const menuButtonRef=useRef<HTMLButtonElement>(null)
   const [locationEnabled, setLocationEnabled] = useState(false)
@@ -278,7 +283,7 @@ function App() {
   return <div className={`app-shell ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}><a className="skip-link" href="#main-content">跳转到主内容</a>
     <aside id="app-sidebar" className={`sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`} aria-label="主导航">
       <div className="sidebar-head"><button className="brand" onClick={() => go('home')} aria-label="返回首页"><span><Sparkles size={18} /></span><div><b>同频</b><small>REAL CONNECTIONS</small></div></button><button className="collapse-toggle" onClick={() => setSidebarCollapsed(x => !x)} aria-label={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}>{sidebarCollapsed ? <PanelLeftOpen /> : <PanelLeftClose />}</button><button className="mobile-close" onClick={closeMobileMenu} aria-label="关闭菜单"><X /></button></div>
-      <div className="sidebar-scroll">{navGroups.map(group => <section className="nav-group" key={group.label}><h3>{group.label}</h3><nav>{group.items.map(item => <button title={sidebarCollapsed ? item.label : undefined} aria-current={view === item.id ? 'page' : undefined} key={item.id} className={view === item.id ? 'active' : ''} onClick={() => go(item.id)}><span className="nav-icon"><item.icon size={19} /></span><span className="nav-label">{item.label}</span>{item.badge && <em>{item.badge}</em>}</button>)}</nav></section>)}</div>
+      <div className="sidebar-scroll"><div className="journey-status"><span><Sparkles/></span><div><b>同频旅程</b><small>从了解自己开始</small></div><i><em style={{width:`${view==='assessment'?'34%':view==='preferences'?'67%':view==='matches'?'100%':'12%'}`}}/></i></div>{navGroups.map(group => {const active=group.items.some(item=>item.id===view),open=navOpen[group.label]!==false||active||sidebarCollapsed;return <section className={`nav-group ${open?'open':'closed'} ${active?'has-active':''}`} key={group.label}><button className="nav-group-toggle" aria-expanded={open} onClick={()=>setNavOpen(current=>({...current,[group.label]:!open}))}><span><b>{group.label}</b><small>{group.hint}</small></span><ChevronDown/></button><nav aria-label={group.label}>{group.items.map(item => <button title={sidebarCollapsed ? item.label : undefined} aria-current={view === item.id ? 'page' : undefined} key={item.id} className={`${view === item.id ? 'active' : ''} ${item.featured?'featured':''}`} onClick={() => go(item.id)}><span className="nav-icon"><item.icon size={19} /></span><span className="nav-label">{item.label}</span>{item.step&&<small className="nav-step">{item.step}</small>}{item.badge && <em>{item.badge}</em>}</button>)}</nav></section>})}</div>
       <div className="sidebar-bottom"><button className="side-extra" onClick={() => session ? go('data') : setShowAuth(true)}><Settings size={18}/><span>数据与账号</span></button><button className="side-extra" onClick={() => go('legal')}><LifeBuoy size={18}/><span>帮助与条款</span></button><div className="side-profile-wrap"><button className="side-profile" onClick={() => setProfileMenuOpen(x => !x)} aria-expanded={profileMenuOpen}><Avatar src={userAvatar} size={38} online={Boolean(session)} /><div><b>{profileBundle?.profile.nickname || session?.user.user_metadata.nickname || '访客'}</b><span>{profileBundle?.profile.life_stage || (session ? '已登录' : '演示模式')}</span></div><ChevronDown size={16} className={profileMenuOpen ? 'rotate' : ''} /></button>{profileMenuOpen && <motion.div className="profile-popover" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}}><button onClick={() => go('profile')}><User/>我的主页</button><button onClick={() => session ? go('data') : setShowAuth(true)}><Settings/>账号设置</button><button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>{theme === 'light' ? <Moon/> : <Sun/>}{theme === 'light' ? '深色模式' : '浅色模式'}</button><i />{session ? <button className="logout" onClick={signOut}><LogOut/>退出登录</button> : <button onClick={() => setShowAuth(true)}><LogIn/>登录同频</button>}</motion.div>}</div></div>
     </aside>{mobileMenuOpen && <button className="sidebar-scrim" aria-label="关闭菜单" onClick={closeMobileMenu} />}
     <main id="main-content" tabIndex={-1}><header className="topbar"><div><div className="mobile-title"><button ref={menuButtonRef} className="mobile-menu-button" onClick={()=>setMobileMenuOpen(true)} aria-label="打开模块导航" aria-controls="app-sidebar" aria-expanded={mobileMenuOpen}><Menu/></button><p className="mobile-brand"><Sparkles size={17} />同频</p></div><h1>{title} <span>👋</span></h1>{view === 'home' && <p>今天也有新的故事，正在靠近你。</p>}</div><div className="top-actions"><Suspense fallback={null}><ConnectionHealth/><PwaControls/></Suspense><button className="icon-btn theme-toggle" aria-label={theme === 'light' ? '切换深色模式' : '切换浅色模式'} onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>{theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}</button><Suspense fallback={<button className="search search-trigger"><Search/><span>搜索校园、兴趣或用户</span><kbd>⌘ K</kbd></button>}><GlobalSearch people={matchPeople.map(p=>({id:p.id,name:p.name,school:p.school,major:p.major,tags:p.tags,avatar:p.avatar}))} pages={navGroups.flatMap(g=>g.items).map(x=>({id:x.id,label:x.label}))} onPerson={id=>{const person=matchPeople.find(p=>p.id===id);if(person)setSelectedPerson(person)}} onPage={id=>go(id as View)}/></Suspense><button className="icon-btn notification" aria-label="打开通知中心" onClick={() => { if(!session){setShowAuth(true);notify('登录后查看账号通知');return}setNotifications(false);setShowNotifications(true) }}><Bell size={20} />{notifications && <i />}</button>{session ? <button className="session-pill" onClick={signOut}><LogOut size={15} />退出</button> : <button className="session-pill" onClick={() => setShowAuth(true)}><LogIn size={15} />登录</button>}<button className="top-avatar-button" aria-label={session?'打开我的主页':'登录后查看个人主页'} onClick={()=>session?go('profile'):setShowAuth(true)}><Avatar src={userAvatar} size={38}/></button></div></header>
