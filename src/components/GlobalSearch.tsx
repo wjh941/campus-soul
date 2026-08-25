@@ -15,7 +15,7 @@ export default function GlobalSearch({people,pages,onPerson,onPage}:Props){
  const input=useRef<HTMLInputElement>(null)
  const trigger=useRef<HTMLButtonElement>(null)
  const normalized=query.trim().toLowerCase()
- const peopleResults=useMemo(()=>normalized?people.filter(p=>[p.name,p.school,p.major,...p.tags].some(v=>v.toLowerCase().includes(normalized))).slice(0,6):[],[normalized,people])
+ const peopleResults=useMemo(()=>normalized?people.filter(p=>[p.name,p.school,p.major,...(Array.isArray(p.tags)?p.tags:[])].some(v=>String(v??'').toLowerCase().includes(normalized))).slice(0,6):[],[normalized,people])
  const pageResults=useMemo(()=>normalized?pages.filter(p=>p.label.toLowerCase().includes(normalized)).slice(0,5):[],[normalized,pages])
  const items=useMemo<Item[]>(()=>[...pageResults.map(page=>({key:`page-${page.id}`,kind:'page' as const,page})),...peopleResults.map(person=>({key:`person-${person.id}`,kind:'person' as const,person}))],[pageResults,peopleResults])
  useEffect(()=>{const key=(event:KeyboardEvent)=>{if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='k'){event.preventDefault();setOpen(true)}else if(event.key==='Escape'&&open){setOpen(false);trigger.current?.focus()}};addEventListener('keydown',key);return()=>removeEventListener('keydown',key)},[open])

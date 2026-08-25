@@ -23,7 +23,7 @@ export default function ProfileEditor({ user, onClose, onSaved }: Props) {
   if (!bundle) return <div className="modal-backdrop"><div className="editor-loading">{error || <><LoaderCircle className="spin" />正在加载资料</>}</div></div>
   const profile = bundle.profile
   const update = (patch: Partial<typeof profile>) => setBundle({ ...bundle, profile: { ...profile, ...patch } })
-  const toggle = (key: 'interests' | 'relationship_values', value: string) => update({ [key]: profile[key].includes(value) ? profile[key].filter(x => x !== value) : [...profile[key], value] })
+  const toggle=(key:'interests'|'relationship_values',value:string)=>{const current=Array.isArray(profile[key])?profile[key]:[];update({[key]:current.includes(value)?current.filter(x=>x!==value):[...current,value]})}
 
   const submit = async () => {
     setBusy(true); setError('')
@@ -78,7 +78,7 @@ export default function ProfileEditor({ user, onClose, onSaved }: Props) {
           <label className="wide">关于我<textarea maxLength={500} value={profile.bio ?? ''} onChange={e => update({ bio: e.target.value })} placeholder="分享真实的你，而不是完美的你" /></label>
           <label className="wide">理想约会<input value={profile.ideal_date ?? ''} onChange={e => update({ ideal_date: e.target.value })} placeholder="例如：旧书店 + 黄昏散步" /></label>
         </div>
-        <section className="editor-tags"><h3>我的兴趣</h3><div>{interests.map(x => <button className={profile.interests.includes(x) ? 'selected' : ''} onClick={() => toggle('interests', x)} key={x}>{profile.interests.includes(x) && <Check />}{x}</button>)}</div><h3>我看重的关系品质</h3><div>{values.map(x => <button className={profile.relationship_values.includes(x) ? 'selected' : ''} onClick={() => toggle('relationship_values', x)} key={x}>{profile.relationship_values.includes(x) && <Check />}{x}</button>)}</div></section>
+        <section className="editor-tags"><h3>我的兴趣</h3><div>{interests.map(x => <button className={(profile.interests??[]).includes(x) ? 'selected' : ''} onClick={() => toggle('interests', x)} key={x}>{(profile.interests??[]).includes(x) && <Check />}{x}</button>)}</div><h3>我看重的关系品质</h3><div>{values.map(x => <button className={(profile.relationship_values??[]).includes(x) ? 'selected' : ''} onClick={() => toggle('relationship_values', x)} key={x}>{(profile.relationship_values??[]).includes(x) && <Check />}{x}</button>)}</div></section>
         <section className="photo-editor"><div><h3>生活照片</h3><p>最多展示 6 张，帮助对方了解你的生活切面</p></div><div className="editor-photo-grid">{bundle.photos.map(photo => <img key={photo.id} src={photo.url} alt="个人生活" />)}{bundle.photos.length < 6 && <button onClick={() => photoRef.current?.click()}><ImagePlus /><span>添加照片</span></button>}</div><input hidden ref={photoRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={e => void addPhoto(e.target.files?.[0])} /></section>
         <label className="visibility"><input type="checkbox" checked={profile.profile_visible} onChange={e => update({ profile_visible: e.target.checked })} /><ShieldCheck /><span><b>允许出现在匹配推荐中</b><small>关闭后，其他用户将无法在匹配页发现你</small></span></label>
         {error && <div className="auth-message">{error}</div>}

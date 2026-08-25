@@ -19,7 +19,7 @@ export default function ChatPanel({ session, onRequireAuth }: { session: Session
   const [query,setQuery]=useState('')
   const bottom = useRef<HTMLDivElement>(null)
   const requestRef=useRef(0)
-  const visibleConversations=useMemo(()=>{const value=query.trim().toLowerCase();return value?conversations.filter(item=>[item.name,item.school,item.lastMessage].some(text=>text.toLowerCase().includes(value))):conversations},[conversations,query])
+  const visibleConversations=useMemo(()=>{const value=query.trim().toLowerCase();return value?conversations.filter(item=>[item.name,item.school,item.lastMessage].some(text=>String(text??'').toLowerCase().includes(value))):conversations},[conversations,query])
   const loadConversations = useCallback(async () => { if (!session) return; setLoading(true); try { setConversations(await fetchConversations(session.user.id)); setError('') } catch (e) { setError(e instanceof Error ? e.message : '会话加载失败') } finally { setLoading(false) } }, [session])
   useEffect(()=>{if(!session)return;const timer=window.setTimeout(()=>void loadConversations(),0);return()=>clearTimeout(timer)},[session,loadConversations])
   useEffect(() => {
