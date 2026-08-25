@@ -125,6 +125,10 @@ export type Database = {
     }
     Views: { [_ in never]: never }
     Functions: {
+      cancel_my_pending_order:{Args:{target_order:string};Returns:undefined}
+      admin_commerce_summary:{Args:Record<string,never>;Returns:Json}
+      admin_support_queue:{Args:{result_limit?:number};Returns:{id:string;user_id:string;email:string|null;category:string;subject:string;body:string;status:string;priority:string;created_at:string}[]}
+      admin_update_ticket:{Args:{target_ticket:string;next_status:string;next_priority?:string|null};Returns:undefined}
       get_my_membership:{Args:Record<string,never>;Returns:Json}
       get_my_admirers:{Args:Record<string,never>;Returns:{user_id:string;nickname:string;avatar_url:string|null;school:string;created_at:string;can_view:boolean}[]}
       create_pending_order:{Args:{chosen_plan:string};Returns:string}
