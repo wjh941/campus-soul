@@ -1,0 +1,38 @@
+/* Global tactile feedback — visual only, no layout-shifting interaction. */
+:root{--press-scale:.975;--focus-ring:0 0 0 3px color-mix(in srgb,var(--purple) 22%,transparent);--focus-line:color-mix(in srgb,var(--purple) 62%,var(--line));--tap-glow:color-mix(in srgb,var(--purple) 11%,transparent)}
+:where(button,a,[role="button"],summary,input,textarea,select){-webkit-tap-highlight-color:transparent}
+:where(button,a,[role="button"],summary){position:relative;isolation:isolate}
+:where(button,a,[role="button"],summary):focus-visible{outline:2px solid var(--focus-line)!important;outline-offset:3px;box-shadow:var(--focus-ring)}
+:where(input,textarea,select):focus-visible{outline:0;border-color:var(--focus-line)!important;box-shadow:var(--focus-ring)!important}
+:where(button,[role="button"],summary){touch-action:manipulation;user-select:none}
+:where(button):not(:disabled){cursor:pointer}
+:where(button):disabled{cursor:not-allowed;opacity:.54;filter:saturate(.72);transform:none!important}
+:where(button,[role="button"],summary):active{transition-duration:45ms!important}
+:where(button):not(:disabled):active,:where([role="button"]):active,:where(summary):active{transform:scale(var(--press-scale))!important;filter:saturate(1.08)}
+:where(.primary,.secondary,.icon-btn,.filter,.account-tabs button,.preference-chips button,.assessment-chips button,.editor-tags button,.browser-notify,.mark-read,.load-more){overflow:hidden;transform-origin:center}
+:where(.primary,.secondary,.icon-btn,.filter,.account-tabs button,.preference-chips button,.assessment-chips button,.editor-tags button,.browser-notify,.mark-read,.load-more)::before{content:"";position:absolute;z-index:-1;inset:50%;border-radius:inherit;background:var(--tap-glow);opacity:0;transform:translate(-50%,-50%) scale(.2);transition:inset .22s,opacity .18s,transform .22s;pointer-events:none}
+:where(.primary,.secondary,.icon-btn,.filter,.account-tabs button,.preference-chips button,.assessment-chips button,.editor-tags button,.browser-notify,.mark-read,.load-more):not(:disabled):active::before{inset:-10%;opacity:1;transform:none;transition-duration:50ms}
+:where(button) svg{flex:none;transition:transform .16s cubic-bezier(.2,.8,.2,1)}
+:where(button):not(:disabled):active>svg{transform:scale(.88)}
+:where(button:has(.spin)){cursor:wait;min-width:max-content}
+.spin{transform-origin:center!important;will-change:transform}
+.sidebar nav button.active,.account-tabs button.active,.filter.active,.conversation-items button.active,.preference-chips button.selected,.assessment-chips button.selected,.editor-tags button.selected{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--purple) 20%,transparent),0 5px 16px color-mix(in srgb,var(--purple) 8%,transparent)}
+.match-card,.post-card,.preference-cards article,.mini-person,.search-results>button{transform:translateZ(0);backface-visibility:hidden}
+.match-card:focus-visible,.preference-cards article:focus-visible{outline:2px solid var(--focus-line);outline-offset:4px;box-shadow:var(--focus-ring),var(--elev-2)}
+.post-actions button,.profile-safety-actions button,.anon-tools button{border-radius:9px}
+.post-actions button:active,.profile-safety-actions button:active,.anon-tools button:active{background:var(--tap-glow)}
+.image-chip button,.modal-close,.mobile-close,.notification-panel header button{display:grid;place-items:center;min-width:32px;min-height:32px}
+@media(hover:hover){
+ :where(.primary,.secondary,.browser-notify,.mark-read,.load-more):not(:disabled):hover{filter:saturate(1.06);box-shadow:0 9px 24px color-mix(in srgb,var(--purple) 14%,transparent)}
+ :where(.icon-btn,.modal-close,.mobile-close,.image-chip button):not(:disabled):hover{background:var(--lav);color:var(--purple)}
+ .preference-cards article:hover,.post-card:hover{border-color:color-mix(in srgb,var(--purple) 20%,var(--line));box-shadow:var(--elev-2)}
+}
+@media(max-width:760px){
+ :where(button,a,[role="button"],summary){min-height:40px}
+ :where(.icon-btn,.modal-close,.mobile-close,.image-chip button,.comment-input button,.message-composer button){min-width:40px;min-height:40px}
+ :root{--press-scale:.96}
+}
+@media(prefers-reduced-motion:reduce){
+ :where(button,a,[role="button"],summary),:where(button) svg,:where(.primary,.secondary,.icon-btn)::before{transition:none!important}
+ :where(button):not(:disabled):active,:where([role="button"]):active{transform:none!important}
+}
