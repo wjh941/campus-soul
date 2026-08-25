@@ -21,7 +21,9 @@ export async function fetchProfileBundle(userId:string):Promise<ProfileBundle>{
   ])
   if(error||!profile) throw error??new Error('资料不存在')
   if(!preference) throw new Error('偏好资料不存在')
-  return {profile,preference,photos:photos??[]}
+  const safeProfile={...profile,interests:Array.isArray(profile.interests)?profile.interests:[],lifestyle:Array.isArray(profile.lifestyle)?profile.lifestyle:[],relationship_values:Array.isArray(profile.relationship_values)?profile.relationship_values:[],self_assessment:profile.self_assessment??{}}
+  const safePreference={...preference,desired_traits:Array.isArray(preference.desired_traits)?preference.desired_traits:[],preferred_genders:Array.isArray(preference.preferred_genders)?preference.preferred_genders:[],preferred_interests:Array.isArray(preference.preferred_interests)?preference.preferred_interests:[],preferred_values:Array.isArray(preference.preferred_values)?preference.preferred_values:[],preferred_lifestyle:Array.isArray(preference.preferred_lifestyle)?preference.preferred_lifestyle:[],preferred_life_stages:Array.isArray(preference.preferred_life_stages)?preference.preferred_life_stages:[]}
+  return {profile:safeProfile,preference:safePreference,photos:photos??[]}
 }
 
 export async function saveProfile(userId:string, profile:Database['public']['Tables']['profiles']['Update'], preference?:Database['public']['Tables']['preferences']['Update']){

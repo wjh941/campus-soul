@@ -39,7 +39,7 @@ export async function fetchSocialPosts(userId?: string): Promise<SocialPost[]> {
     return {
       id: row.id, authorId: row.author_id, name: author?.nickname ?? '同频用户', avatar: author?.avatar_url ?? fallbackAvatar,
       school: author?.school ?? '认证高校', time: relativeTime(row.created_at), text: row.content,
-      image: row.image_url ?? undefined, tags: row.tags, likes: postLikes.length,
+      image: row.image_url ?? undefined, tags: Array.isArray(row.tags)?row.tags:[], likes: postLikes.length,
       liked: Boolean(userId && postLikes.some(like => like.user_id === userId)),
       comments: (comments ?? []).filter(comment => comment.post_id === row.id).map(comment => ({
         id: comment.id, name: profileMap.get(comment.author_id)?.nickname ?? '同频用户',
