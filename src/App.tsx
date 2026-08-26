@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Bell, ChevronRight, Compass, Heart, Home, ImagePlus, MapPin, MessageCircle,
+  Bell, ChevronRight, Compass, Heart, Home, ImagePlus, MapPin, MessageCircle, PawPrint,
   Search, Send, ShieldCheck, SlidersHorizontal, Sparkles, User,
   Users, X, Zap, GraduationCap, Coffee, BookOpen, Check, ArrowRight,
   Quote, Bookmark, Settings, Camera, LogIn, LogOut, LoaderCircle, Upload, WifiOff, Moon, Sun, Target, Flag, Ban, PanelLeftClose, PanelLeftOpen, ChevronDown, LifeBuoy, VenetianMask
@@ -28,6 +28,7 @@ const DataRights = lazy(() => import('./components/DataRights'))
 const DiscoveryMap = lazy(() => import('./components/DiscoveryMap'))
 const AnonymousChat = lazy(() => import('./components/AnonymousChat'))
 const AssessmentCenter = lazy(() => import('./components/AssessmentCenter'))
+const SelfExploration = lazy(() => import('./components/SelfExploration'))
 const MatchInsights = lazy(() => import('./components/MatchInsights'))
 const PwaControls = lazy(() => import('./components/PwaControls'))
 const GlobalSearch = lazy(() => import('./components/GlobalSearch'))
@@ -35,8 +36,8 @@ const ConnectionHealth = lazy(() => import('./components/ConnectionHealth'))
 const MembershipCenter = lazy(()=>import('./components/MembershipCenter'))
 const WaitlistCard=lazy(()=>import('./components/WaitlistCard'))
 
-type View = 'home' | 'matches' | 'preferences' | 'assessment' | 'moments' | 'anonymous' | 'messages' | 'membership' | 'account' | 'legal' | 'data' | 'admin' | 'profile'
-const views:View[]=['home','matches','preferences','assessment','moments','anonymous','messages','membership','account','legal','data','admin','profile']
+type View = 'home' | 'exploration' | 'matches' | 'preferences' | 'assessment' | 'moments' | 'anonymous' | 'messages' | 'membership' | 'account' | 'legal' | 'data' | 'admin' | 'profile'
+const views:View[]=['home','exploration','matches','preferences','assessment','moments','anonymous','messages','membership','account','legal','data','admin','profile']
 const viewFromUrl=():View=>{const value=new URLSearchParams(location.search).get('view');return views.includes(value as View)?value as View:'home'}
 type Comment = { id: string | number; name: string; avatar: string; text: string }
 type Post = {
@@ -63,6 +64,7 @@ const navGroups:NavGroup[] = [
   { label: '同频旅程', hint:'认识自己，再遇见彼此', items: [
     { id: 'home' as View, label: '发现首页', icon: Home },
     { id: 'assessment' as View, label: '认识自己', icon: Sparkles },
+    { id: 'exploration' as View, label: '探索内心', icon: PawPrint },
     { id: 'preferences' as View, label: '表达期待', icon: Target },
     { id: 'matches' as View, label: '遇见同频', icon: Heart, badge: '12', step:'03', featured:true },
   ]},
@@ -205,7 +207,7 @@ function App() {
   const syncRef = useRef<{userId:string;promise:Promise<void>}|null>(null)
   const [insightPerson, setInsightPerson] = useState<(MatchPerson & { analysis?: Record<string, number>; topics?: string[] }) | null>(null)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => (safeStorage.get('campus-theme') as 'light' | 'dark') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'))
-  const title = useMemo(() => ({ home: profileBundle?.profile.nickname?`你好，${profileBundle.profile.nickname}`:'欢迎来到同频', matches: '为你找到的同频', preferences: '按偏好推荐', moments: '同频动态', assessment: '自我评测', anonymous: '匿名相遇', messages: '同频消息', membership:'会员与支持', account: '关系与安全', legal: '信任与安全中心', data: '数据与账号', admin: '平台审核', profile: '我的同频空间' })[view], [view,profileBundle?.profile.nickname])
+  const title = useMemo(() => ({ home: profileBundle?.profile.nickname?`你好，${profileBundle.profile.nickname}`:'欢迎来到同频', exploration:'探索内心', matches: '为你找到的同频', preferences: '按偏好推荐', moments: '同频动态', assessment: '自我评测', anonymous: '匿名相遇', messages: '同频消息', membership:'会员与支持', account: '关系与安全', legal: '信任与安全中心', data: '数据与账号', admin: '平台审核', profile: '我的同频空间' })[view], [view,profileBundle?.profile.nickname])
   useEffect(() => { document.documentElement.dataset.theme = theme; safeStorage.set('campus-theme', theme) }, [theme])
   useEffect(() => {
     const press = (event: PointerEvent) => {
@@ -292,6 +294,7 @@ function App() {
       <AnimatePresence mode="wait">
         {view === 'home' && <motion.div className="page discovery-page" key="home" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>{dailyPulse}{!session&&<Suspense fallback={null}><WaitlistCard/></Suspense>}<Suspense fallback={<div className="discovery-loading"><LoaderCircle className="spin"/></div>}><DiscoveryMap people={discoveryPeople} located={locationEnabled} locating={locating} radius={discoveryRadius} onRadius={updateRadius} onLocate={()=>void locateAndDiscover()} onOpen={setSelectedPerson} onHeart={person=>void heartPerson(person)}/></Suspense><section className="section-head"><div><span className="section-kicker">DAILY PICKS</span><h2>今日心动推荐</h2></div><button onClick={() => go('matches')}>查看全部 <ChevronRight size={17} /></button></section>{!session&&<div className="demo-content-note"><WifiOff/>以下为功能预览，登录后显示真实推荐</div>}<div className="match-grid">{people.slice(0, 3).map(p => <MatchCard key={p.id} person={p} onOpen={() => setSelectedPerson(p)} onHeart={()=>heartPerson(p)} onInsight={'userId' in p && 'reasons' in p ? () => setInsightPerson(p as unknown as MatchPerson) : undefined} />)}</div><section className="section-head moment-title"><div><span className="section-kicker">CAMPUS MOMENTS</span><h2>同频的人，此刻在做什么</h2></div><button onClick={() => go('moments')}>进入广场 <ChevronRight size={17} /></button></section><div className="home-feed">{posts.slice(0, 2).map(p => <PostCard key={p.id} post={p} onLike={() => like(p.id)} onComment={t => comment(p.id, t)} onDelete={('authorId' in p && p.authorId===session?.user.id)?()=>void removePost(p.id):undefined} onReport={('authorId' in p && p.authorId!==session?.user.id)?()=>void flagPost(p.id):undefined} onNotice={notify} userAvatar={userAvatar}/>)}</div></motion.div>}
         {view === 'matches' && <motion.div className="page" key="matches" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><div className="filter-bar"><div><button className={`filter ${matchFilter==='selected'?'active':''}`} onClick={()=>setMatchFilter('selected')}>为你精选</button><button className={`filter ${matchFilter==='high'?'active':''}`} onClick={()=>setMatchFilter('high')}>高契合度</button><button className={`filter ${matchFilter==='school'?'active':''}`} onClick={()=>setMatchFilter('school')}>同校用户</button></div><button className="secondary" onClick={()=>go('preferences')}><SlidersHorizontal size={17} />筛选偏好</button></div><div className="match-insight glass-card"><div className="insight-icon"><Sparkles /></div><div><b>{session?'匹配雷达已更新':'匹配功能预览'}</b><p>{session?`当前找到 ${matchPeople.length} 位候选人，可继续调整关系期待`:'登录并完善画像后，将根据真实资料生成推荐'}</p></div><button onClick={() => setShowOnboarding(true)}>查看我的画像 <ChevronRight size={16} /></button></div>{matchesLoading ? <div className="match-skeleton-grid">{[1,2,3].map(x => <div className="match-skeleton" key={x}><i /><b /><span /></div>)}</div> : filteredMatches.length?<div className="match-grid full">{filteredMatches.map(p => <MatchCard key={p.id} person={p} onOpen={() => setSelectedPerson(p)} onHeart={()=>heartPerson(p)} onInsight={'userId' in p && 'reasons' in p ? () => setInsightPerson(p as unknown as MatchPerson) : undefined} />)}</div>:<div className="match-empty glass-card"><Sparkles/><h3>当前分类暂时没有候选人</h3><p>可以调整偏好，或切换到“为你精选”继续浏览。</p><button className="primary" onClick={()=>go('preferences')}>调整匹配偏好</button></div>}</motion.div>}
+        {view === 'exploration' && <motion.div className="page" key="exploration" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0}}><Suspense fallback={<PageLoading label="正在打开探索工作室"/>}><SelfExploration/></Suspense></motion.div>}
         {view === 'assessment' && <motion.div className="page" key="assessment" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0}}>{session?<Suspense fallback={<PageLoading label="正在打开自我评测"/>}><AssessmentCenter session={session} onSaved={()=>{notify('自我评测已保存，匹配已更新');go('matches')}}/></Suspense>:<div className="assessment-locked"><Sparkles/><h2>登录后开始自我评测</h2><p>完成评测后，我们会根据你的性格、生活节奏和关系期待生成更透明的匹配分析。</p><button className="primary" onClick={()=>setShowAuth(true)}>登录并开始评测 <ArrowRight/></button></div>}</motion.div>}
         {view === 'preferences' && <motion.div className="page preference-page" key="preferences" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><Suspense fallback={<PageLoading label="正在理解你的偏好"/>}><PreferenceRecommendations session={session} onRequireAuth={() => setShowAuth(true)} onOpen={setSelectedPerson} /></Suspense></motion.div>}
         {view === 'moments' && <motion.div className="page moments-page" key="moments" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><div className="feed-column"><Composer onPost={addPost} authenticated={Boolean(session) || !isSupabaseConfigured} avatar={userAvatar}/><div className="feed-tabs"><button className="active">最新动态</button></div>{posts.length?posts.map(p => <PostCard key={p.id} post={p} onLike={() => like(p.id)} onComment={t => comment(p.id, t)} onDelete={('authorId' in p && p.authorId===session?.user.id)?()=>void removePost(p.id):undefined} onReport={('authorId' in p && p.authorId!==session?.user.id)?()=>void flagPost(p.id):undefined} onNotice={notify} userAvatar={userAvatar}/>):<div className="match-empty glass-card"><MessageCircle/><h3>还没有真实动态</h3><p>发布第一条内容，或稍后回来看看。</p></div>}</div><aside className="right-rail"><div className="rail-card"><h3><Users size={18} />{session?'当前推荐':'功能预览'}</h3>{(session?matchPeople:people).slice(0, 3).map(p => <div className="mini-person" key={p.id}><Avatar src={p.avatar} size={38} /><div><b>{p.name}</b><span>{p.school}</span></div><button onClick={()=>setSelectedPerson(p)}>查看</button></div>)}</div><div className="rail-card"><h3><Zap size={18} />社区话题</h3>{['# 分享真实的此刻','# 最近单曲循环','# 周末搭子计划'].map((x,i)=><div className="trend" key={x}><b>0{i+1}</b><span>{x}<small>话题建议</small></span></div>)}</div><div className="safety-card"><ShieldCheck /><div><b>同频安全中心</b><p>真实高校认证 · 隐私保护</p></div></div></aside></motion.div>}
