@@ -1,0 +1,1 @@
+.message-composer textarea{min-height:42px;max-height:120px;resize:none;line-height:1.5}.message-composer textarea::placeholder{color:var(--muted)}
