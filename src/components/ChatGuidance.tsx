@@ -1,0 +1,5 @@
+import { MessageCircle, ShieldCheck, Sparkles } from 'lucide-react'
+const openers=['你最近在关注什么有趣的事情？','如果有一个舒服的周末，你会怎么安排？','你觉得一段好的关系最重要的是什么？']
+const replies=['谢谢你的分享！','这个话题很有意思','我也有类似的感受']
+export function SafetyTip({open,onToggle}:{open:boolean;onToggle:()=>void}){return <><button className={`chat-safety ${open?'expanded':''}`} aria-expanded={open} onClick={onToggle}><ShieldCheck size={14}/><span>安全交流提示</span><small>{open?'收起':'查看'}</small></button>{open&&<div className="chat-safety-detail"><p>建议先在平台内建立基本信任，不要发送验证码、转账或敏感证件。</p><p>第一次线下见面请选择公共场所，并告诉可信任的人。</p></div>}</>}
+export function ConversationGuidance({onUse}:{onUse:(text:string)=>void}){return <div className="conversation-guidance"><div><Sparkles size={13}/><span>从一句真诚的问候开始</span></div><div className="conversation-starters">{openers.map(text=><button type="button" key={text} onClick={()=>onUse(text)}>{text}</button>)}</div><div className="quick-replies"><MessageCircle size={12}/>{replies.map(text=><button type="button" key={text} onClick={()=>onUse(text)}>{text}</button>)}</div></div>}
