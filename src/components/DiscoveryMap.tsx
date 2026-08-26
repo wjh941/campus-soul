@@ -7,7 +7,7 @@ type Props={people:MatchPerson[];located:boolean;locating:boolean;radius:number;
 export default function DiscoveryMap({people,located,locating,radius,onRadius,onLocate,onOpen,onHeart}:Props){
  const[selected,setSelected]=useState<string|undefined>(people[0]?.id)
  const shown=useMemo(()=>people.slice(0,8),[people]),active=shown.find(x=>x.id===selected)??shown[0]
- return <section className="discovery-hero">
+ return <section className={`discovery-hero ${!shown.length?'discovery-empty':''}`}>
   <div className="discovery-copy"><span className="eyebrow"><Sparkles/>LIVE DISCOVERY</span><h2>看见你与附近的人，<br/><em>如何彼此靠近。</em></h2><p>距离告诉你们相隔多远，契合度呈现价值观、兴趣与生活节奏的共振。</p><div className="discovery-actions"><button className="primary" disabled={locating} onClick={onLocate}><LocateFixed/>{locating?'正在定位…':located?'更新我的位置':'开启附近发现'}</button><span><LockKeyhole/>仅保存约 1 公里精度的模糊位置</span></div><div className="discovery-stats"><div><b>{active?`${active.score}%`:'—'}</b><span>最高契合</span></div><div><b>{active?.distanceKm??'—'}{active&&<small> km</small>}</b><span>最近距离</span></div><div><b>{shown.length}</b><span>当前候选</span></div></div></div>
   <div className="connection-map" role="img" aria-label="附近用户距离和契合度关系图">
    <div className="map-grid"/><div className="range-ring r1"/><div className="range-ring r2"/><div className="range-ring r3"/><span className="range-label l1">近</span><span className="range-label l2">{Math.round(radius/2)} km</span><span className="range-label l3">{radius} km</span>
