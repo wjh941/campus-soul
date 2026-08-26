@@ -1,4 +1,4 @@
-const VERSION='tongpin-v3';
+const VERSION='tongpin-v4';
 const BASE=new URL('./',self.registration.scope).pathname;
 const APP_SHELL=[BASE,`${BASE}manifest.webmanifest`,`${BASE}favicon.svg`];
 self.addEventListener('install',event=>event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(APP_SHELL))));
