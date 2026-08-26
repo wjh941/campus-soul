@@ -2,7 +2,7 @@
   "name": "同频 · 真实社交与深度匹配",
   "short_name": "同频",
   "description": "面向成年用户的真实社交与深度匹配平台",
-  "start_url": "./",
+  "start_url": "./?source=pwa",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f7f7f5",
