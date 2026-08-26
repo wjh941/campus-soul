@@ -33,6 +33,7 @@ import './next-iteration.css'
 import './ux-upgrade.css'
 import './ios-compatibility.css'
 import './cross-platform.css'
+import './stability.css'
 import './experience-upgrade.css'
 import './final-polish.css'
 import './three-round-upgrade.css'
@@ -42,8 +43,9 @@ import App from './App.tsx'
 import AppErrorBoundary from './components/AppErrorBoundary.tsx'
 import AuthCallback from './components/AuthCallback.tsx'
 
-if ('serviceWorker' in navigator && import.meta.env.PROD) window.addEventListener('load',()=>navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(error=>console.warn('Service worker registration failed',error)))
+if ('serviceWorker' in navigator && import.meta.env.PROD) window.addEventListener('load',()=>navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).then(registration=>registration.update().catch(()=>undefined)).catch(error=>console.warn('Service worker registration failed',error)))
 window.addEventListener('error',event=>{if(event.target instanceof HTMLScriptElement||event.target instanceof HTMLLinkElement)document.documentElement.classList.add('boot-failed')},{capture:true})
+window.addEventListener('unhandledrejection',event=>{console.warn('Unhandled async error',event.reason)})
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
