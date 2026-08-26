@@ -6,5 +6,6 @@ html { scroll-behavior:smooth; }
 body { margin:0; min-width:320px; min-height:100vh; }
 button,input,textarea,select { font:inherit; }
 button { cursor:pointer; }
+.boot-fallback{display:none;min-height:100vh;place-content:center;justify-items:center;gap:12px;padding:24px;text-align:center;color:#272331;background:#f7f7f5;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}.boot-failed .boot-fallback{display:grid}.boot-mark{display:grid;place-items:center;width:52px;height:52px;border-radius:18px;color:#fff;background:linear-gradient(135deg,#7255df,#ff715b);font-size:25px}.boot-fallback strong{font-size:18px}.boot-fallback span{max-width:320px;color:#777181;font-size:12px;line-height:1.7}.boot-fallback a{padding:10px 15px;border-radius:12px;color:#fff;background:#7255df;font-size:12px;text-decoration:none}
 img { display:block; }
 ::selection { background:#dcd3ff; color:#302653; }
