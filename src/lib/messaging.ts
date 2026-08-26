@@ -44,7 +44,10 @@ export async function fetchMessages(matchId: string): Promise<ChatMessage[]> {
 
 export async function sendMessage(matchId: string, userId: string, content: string) {
   if (!supabase) throw new Error('Supabase 尚未配置')
-  const { error } = await supabase.from('messages').insert({ match_id: matchId, sender_id: userId, content: content.trim() })
+  const value=content.trim()
+  if (!value) throw new Error('消息内容不能为空')
+  if (value.length>2000) throw new Error('消息不能超过 2000 个字符')
+  const { error } = await supabase.from('messages').insert({ match_id: matchId, sender_id: userId, content: value })
   if (error) throw error
 }
 
