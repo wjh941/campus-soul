@@ -1,0 +1,1 @@
+.chat-avatar-fallback{display:grid;place-items:center;flex:none;border-radius:50%;background:var(--lav);color:var(--purple);font-weight:700;font-size:14px}.post-image,.match-photo>img,.modal-cover>img{background:var(--soft)}@media(prefers-reduced-motion:reduce){.chat-avatar-fallback{transition:none}}

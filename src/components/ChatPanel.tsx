@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase'
 import { safeStorage } from '../lib/resilience'
 import { ConversationGuidance, SafetyTip } from './ChatGuidance'
 
-function MiniAvatar({ src, size = 42 }: { src: string; size?: number }) { return <img className="chat-avatar" style={{ width: size, height: size }} src={src} alt="用户头像" /> }
+function MiniAvatar({ src, size = 42 }: { src: string; size?: number }) { const [failed,setFailed]=useState(false); return failed?<span className="chat-avatar-fallback" style={{ width: size, height: size }} aria-label="用户头像不可用">?</span>:<img className="chat-avatar" style={{ width: size, height: size }} src={src} alt="用户头像" loading="lazy" decoding="async" onError={()=>setFailed(true)} /> }
 function time(value: string) { return new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit' }).format(new Date(value)) }
 
 export default function ChatPanel({ session, onRequireAuth }: { session: Session | null; onRequireAuth: () => void }) {

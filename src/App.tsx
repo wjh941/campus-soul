@@ -108,7 +108,7 @@ function Composer({ onPost, authenticated, avatar, onClose }: { onPost: (text: s
   const fileRef = useRef<HTMLInputElement>(null)
   const [error,setError]=useState(''),[preview,setPreview]=useState(false)
   useEffect(()=>{if(text)safeStorage.set('tongpin-post-draft',text);else safeStorage.remove('tongpin-post-draft')},[text])
-  const chooseImage=(file?:File)=>{setError('');if(!file)return setImage(undefined);if(file.size>8*1024*1024)return setError('动态图片不能超过 8 MB');if(!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type))return setError('仅支持 JPG、PNG、WebP 或 GIF');setImage(file)}
+  const chooseImage=(file?:File)=>{setError('');if(!file)return setImage(undefined);if(file.size>5*1024*1024)return setError('动态图片不能超过 5 MB');if(!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type))return setError('仅支持 JPG、PNG、WebP 或 GIF');setImage(file)}
   const submit = async () => {
     if (!text.trim() || busy) return
     setBusy(true)

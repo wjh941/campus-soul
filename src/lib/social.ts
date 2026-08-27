@@ -49,10 +49,18 @@ export async function fetchSocialPosts(userId?: string): Promise<SocialPost[]> {
   })
 }
 
+const maxPostImageBytes = 5 * 1024 * 1024
+const postImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+
 export async function createPost(user: User, content: string, image?: File) {
   if (!supabase) throw new Error('Supabase 尚未配置')
+  const trimmed = content.trim()
+  if (!trimmed) throw new Error('动态内容不能为空')
+  if (trimmed.length > 2000) throw new Error('动态内容不能超过 2000 字')
   let imageUrl: string | null = null
   if (image) {
+    if (image.size > maxPostImageBytes) throw new Error('动态图片不能超过 5 MB')
+    if (!postImageTypes.includes(image.type)) throw new Error('仅支持 JPG、PNG、WebP 或 GIF')
     const extension = image.name.split('.').pop()?.toLowerCase() || 'jpg'
     const path = `${user.id}/${crypto.randomUUID()}.${extension}`
     const { error: uploadError } = await supabase.storage.from('post-images').upload(path, image, { contentType: image.type, upsert: false })
