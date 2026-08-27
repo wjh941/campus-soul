@@ -54,10 +54,10 @@ export default function ProfileEditor({ user, onClose, onSaved }: Props) {
 
   return <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
     <motion.div className="profile-editor" initial={{ y: 30, scale: .97 }} animate={{ y: 0, scale: 1 }}>
-      <header><div><span className="section-kicker">REAL PROFILE</span><h2>编辑真实资料</h2><p>完整资料能显著提升匹配质量</p></div><button className="modal-close editor-close" onClick={onClose}><X /></button></header>
+      <header><div><span className="section-kicker">REAL PROFILE</span><h2>编辑真实资料</h2><p>完整资料能显著提升匹配质量</p></div><button type="button" className="modal-close editor-close" onClick={onClose} aria-label="关闭资料编辑"><X /></button></header>
       <div className="editor-scroll">
         <section className="avatar-editor">
-          <div className="profile-avatar"><img src={profile.avatar_url || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300'} alt="当前头像" /><button onClick={() => avatarRef.current?.click()}><Camera /></button></div>
+          <div className="profile-avatar"><img src={profile.avatar_url || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300'} alt="当前头像" /><button type="button" disabled={busy} onClick={() => avatarRef.current?.click()} aria-label="更换主头像"><Camera /></button></div>
           <input hidden ref={avatarRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={e => void changeAvatar(e.target.files?.[0])} />
           <div><b>你的主头像</b><p>清晰、自然且单人的照片更容易获得信任</p></div>
         </section>
@@ -78,8 +78,8 @@ export default function ProfileEditor({ user, onClose, onSaved }: Props) {
           <label className="wide">关于我<textarea maxLength={500} value={profile.bio ?? ''} onChange={e => update({ bio: e.target.value })} placeholder="分享真实的你，而不是完美的你" /></label>
           <label className="wide">理想约会<input value={profile.ideal_date ?? ''} onChange={e => update({ ideal_date: e.target.value })} placeholder="例如：旧书店 + 黄昏散步" /></label>
         </div>
-        <section className="editor-tags"><h3>我的兴趣</h3><div>{interests.map(x => <button className={(profile.interests??[]).includes(x) ? 'selected' : ''} onClick={() => toggle('interests', x)} key={x}>{(profile.interests??[]).includes(x) && <Check />}{x}</button>)}</div><h3>我看重的关系品质</h3><div>{values.map(x => <button className={(profile.relationship_values??[]).includes(x) ? 'selected' : ''} onClick={() => toggle('relationship_values', x)} key={x}>{(profile.relationship_values??[]).includes(x) && <Check />}{x}</button>)}</div></section>
-        <section className="photo-editor"><div><h3>生活照片</h3><p>最多展示 6 张，帮助对方了解你的生活切面</p></div><div className="editor-photo-grid">{bundle.photos.map(photo => <img key={photo.id} src={photo.url} alt="个人生活" />)}{bundle.photos.length < 6 && <button onClick={() => photoRef.current?.click()}><ImagePlus /><span>添加照片</span></button>}</div><input hidden ref={photoRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={e => void addPhoto(e.target.files?.[0])} /></section>
+        <section className="editor-tags"><h3>我的兴趣</h3><div>{interests.map(x => <button type="button" className={(profile.interests??[]).includes(x) ? 'selected' : ''} onClick={() => toggle('interests', x)} key={x}>{(profile.interests??[]).includes(x) && <Check />}{x}</button>)}</div><h3>我看重的关系品质</h3><div>{values.map(x => <button type="button" className={(profile.relationship_values??[]).includes(x) ? 'selected' : ''} onClick={() => toggle('relationship_values', x)} key={x}>{(profile.relationship_values??[]).includes(x) && <Check />}{x}</button>)}</div></section>
+        <section className="photo-editor"><div><h3>生活照片</h3><p>最多展示 6 张，帮助对方了解你的生活切面</p></div><div className="editor-photo-grid">{bundle.photos.map(photo => <img key={photo.id} src={photo.url} alt="个人生活" />)}{bundle.photos.length < 6 && <button type="button" disabled={busy} onClick={() => photoRef.current?.click()}><ImagePlus /><span>添加照片</span></button>}</div><input hidden ref={photoRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={e => void addPhoto(e.target.files?.[0])} /></section>
         <label className="visibility"><input type="checkbox" checked={profile.profile_visible} onChange={e => update({ profile_visible: e.target.checked })} /><ShieldCheck /><span><b>允许出现在匹配推荐中</b><small>关闭后，其他用户将无法在匹配页发现你</small></span></label>
         {error && <div className="auth-message">{error}</div>}
       </div>
