@@ -83,7 +83,7 @@ export default function ProfileEditor({ user, onClose, onSaved }: Props) {
         <label className="visibility"><input type="checkbox" checked={profile.profile_visible} onChange={e => update({ profile_visible: e.target.checked })} /><ShieldCheck /><span><b>允许出现在匹配推荐中</b><small>关闭后，其他用户将无法在匹配页发现你</small></span></label>
         {error && <div className="auth-message">{error}</div>}
       </div>
-      <footer><button className="secondary" onClick={onClose}>取消</button><button className="primary" disabled={busy || !profile.nickname.trim() || !profile.school.trim()} onClick={submit}>{busy ? <LoaderCircle className="spin" /> : <Check />}保存资料</button></footer>
+      <footer><button type="button" className="secondary" onClick={onClose}>取消</button><button type="button" className="primary" disabled={busy || !profile.nickname.trim() || !profile.school.trim()} onClick={submit}>{busy ? <LoaderCircle className="spin" /> : <Check />}保存资料</button></footer>
     </motion.div>
   </motion.div>
 }

@@ -1,0 +1,2 @@
+/* Precision polish: preserve layout while media or remote records arrive late. */
+.post-image,.modal-cover>img,.profile-avatar>img,.editor-photo-grid>img{min-height:44px;object-fit:cover}.chat-avatar-fallback{border:1px solid color-mix(in srgb,var(--purple) 20%,var(--line))}.message-composer textarea{overscroll-behavior:contain}@media(max-width:760px){.modal-close,.chat-back{min-width:44px;min-height:44px}.map-heart{min-width:44px;min-height:44px}}@media(prefers-reduced-motion:reduce){.message-stream{scroll-behavior:auto!important}}

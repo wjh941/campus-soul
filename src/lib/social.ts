@@ -58,17 +58,18 @@ export async function createPost(user: User, content: string, image?: File) {
   if (!trimmed) throw new Error('动态内容不能为空')
   if (trimmed.length > 2000) throw new Error('动态内容不能超过 2000 字')
   let imageUrl: string | null = null
+  let uploadedPath: string | undefined
   if (image) {
     if (image.size > maxPostImageBytes) throw new Error('动态图片不能超过 5 MB')
     if (!postImageTypes.includes(image.type)) throw new Error('仅支持 JPG、PNG、WebP 或 GIF')
-    const extension = image.name.split('.').pop()?.toLowerCase() || 'jpg'
-    const path = `${user.id}/${crypto.randomUUID()}.${extension}`
-    const { error: uploadError } = await supabase.storage.from('post-images').upload(path, image, { contentType: image.type, upsert: false })
+    const extension = ({'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif'} as Record<string,string>)[image.type]
+    uploadedPath = `${user.id}/${crypto.randomUUID()}.${extension}`
+    const { error: uploadError } = await supabase.storage.from('post-images').upload(uploadedPath, image, { contentType: image.type, upsert: false })
     if (uploadError) throw uploadError
-    imageUrl = supabase.storage.from('post-images').getPublicUrl(path).data.publicUrl
+    imageUrl = supabase.storage.from('post-images').getPublicUrl(uploadedPath).data.publicUrl
   }
-  const { error } = await supabase.from('posts').insert({ author_id: user.id, content: content.trim(), image_url: imageUrl, tags: ['我的此刻'] })
-  if (error) throw error
+  const { error } = await supabase.from('posts').insert({ author_id: user.id, content: trimmed, image_url: imageUrl, tags: ['我的此刻'] })
+  if (error) { if (uploadedPath) await supabase.storage.from('post-images').remove([uploadedPath]).catch(() => undefined); throw error }
 }
 
 export async function togglePostLike(postId: string, userId: string, liked: boolean) {
