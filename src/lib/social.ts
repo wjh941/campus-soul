@@ -82,7 +82,10 @@ export async function togglePostLike(postId: string, userId: string, liked: bool
 
 export async function createComment(postId: string, userId: string, content: string) {
   if (!supabase) throw new Error('Supabase 尚未配置')
-  const { error } = await supabase.from('comments').insert({ post_id: postId, author_id: userId, content: content.trim() })
+  const trimmed = content.trim()
+  if (!trimmed) throw new Error('评论内容不能为空')
+  if (trimmed.length > 500) throw new Error('评论不能超过 500 字')
+  const { error } = await supabase.from('comments').insert({ post_id: postId, author_id: userId, content: trimmed })
   if (error) throw error
 }
 

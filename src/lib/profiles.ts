@@ -36,11 +36,11 @@ export async function saveProfile(userId:string, profile:Database['public']['Tab
 async function uploadMedia(user:User,file:File,kind:'avatar'|'photo'){
   if(!supabase) throw new Error('Supabase 尚未配置')
   if(file.size>5*1024*1024)throw new Error('图片不能超过 5 MB')
-  const ext=file.name.split('.').pop()?.toLowerCase()||'jpg';const path=`${user.id}/${kind}-${crypto.randomUUID()}.${ext}`
-  const {error}=await supabase.storage.from('profile-media').upload(path,file,{contentType:file.type});if(error)throw error
+  const extensions:Record<string,string>={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'};const ext=extensions[file.type];if(!ext)throw new Error('仅支持 JPG、PNG 或 WebP');const path=`${user.id}/${kind}-${crypto.randomUUID()}.${ext}`
+  const {error}=await supabase.storage.from('profile-media').upload(path,file,{contentType:file.type,upsert:false});if(error)throw error
   return supabase.storage.from('profile-media').getPublicUrl(path).data.publicUrl
 }
-export async function uploadAvatar(user:User,file:File){const url=await uploadMedia(user,file,'avatar');await saveProfile(user.id,{avatar_url:url});return url}
+export async function uploadAvatar(user:User,file:File){const uploaded=await uploadMedia(user,file,'avatar');try{await saveProfile(user.id,{avatar_url:uploaded})}catch(error){const path=uploaded.split('/').slice(-2).join('/');await supabase?.storage.from('profile-media').remove([path]).catch(()=>undefined);throw error}return uploaded}
 export async function addProfilePhoto(user:User,file:File,position:number){
   if(!supabase)throw new Error('Supabase 尚未配置');const url=await uploadMedia(user,file,'photo')
   const {error}=await supabase.from('profile_photos').upsert({user_id:user.id,url,position});if(error)throw error;return url
