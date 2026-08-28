@@ -1,6 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap');
+/* System font stack keeps first paint usable when external font CDNs are slow or blocked. */
 
-:root { font-family: 'DM Sans','Noto Sans SC',system-ui,sans-serif; color:#24212a; background:#f7f7f5; font-synthesis:none; text-rendering:optimizeLegibility; -webkit-font-smoothing:antialiased; }
+:root { font-family: 'DM Sans','Noto Sans SC','PingFang SC','Microsoft YaHei',system-ui,sans-serif; color:#24212a; background:#f7f7f5; font-synthesis:none; text-rendering:optimizeLegibility; -webkit-font-smoothing:antialiased; }
 * { box-sizing:border-box; }
 html { scroll-behavior:smooth; }
 body { margin:0; min-width:320px; min-height:100vh; }

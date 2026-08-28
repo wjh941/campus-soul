@@ -11,5 +11,9 @@
   "icons": [
     { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ],
+  "shortcuts": [
+    { "name": "发现同频", "short_name": "发现", "url": "./?view=matches", "icons": [{ "src": "favicon.svg", "sizes": "any" }] },
+    { "name": "同频动态", "short_name": "动态", "url": "./?view=moments", "icons": [{ "src": "favicon.svg", "sizes": "any" }] }
+  ],
   "categories": ["social", "lifestyle"]
 }
