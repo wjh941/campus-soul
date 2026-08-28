@@ -1,6 +1,6 @@
 const VERSION='tongpin-v6';
 const BASE=new URL('./',self.registration.scope).pathname;
-const APP_SHELL=[BASE,`${BASE}manifest.webmanifest`,`${BASE}favicon.svg`];
+const APP_SHELL=[BASE,`${BASE}manifest.webmanifest`,`${BASE}favicon.svg`,`${BASE}icon-192.png`,`${BASE}icon-512.png`];
 async function precacheShell(){const cache=await caches.open(VERSION);await cache.addAll(APP_SHELL);try{const html=await fetch(BASE,{cache:'no-store'});if(!html.ok)return;const text=await html.text();const assets=[...text.matchAll(/(?:src|href)=["']([^"']+\.(?:js|css))["']/g)].map(match=>new URL(match[1],self.registration.scope).href);await cache.addAll(assets)}catch{ /* offline install keeps the basic shell */ }}
 self.addEventListener('install',event=>event.waitUntil(precacheShell()));
 self.addEventListener('message',event=>{if(event.data?.type==='SKIP_WAITING')self.skipWaiting()});
