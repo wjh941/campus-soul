@@ -1,0 +1,1 @@
+.guest-trust span{white-space:nowrap}.empty-next-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:8px}.empty-next-actions button{min-height:40px}@media(max-width:760px){.guest-trust{display:grid;grid-template-columns:1fr 1fr}.guest-trust span{font-size:9px}.empty-next-actions{display:grid;width:100%}.empty-next-actions button{width:100%}}
