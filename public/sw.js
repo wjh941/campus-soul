@@ -1,7 +1,8 @@
-const VERSION='tongpin-v5';
+const VERSION='tongpin-v6';
 const BASE=new URL('./',self.registration.scope).pathname;
 const APP_SHELL=[BASE,`${BASE}manifest.webmanifest`,`${BASE}favicon.svg`];
-self.addEventListener('install',event=>event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(APP_SHELL))));
+async function precacheShell(){const cache=await caches.open(VERSION);await cache.addAll(APP_SHELL);try{const html=await fetch(BASE,{cache:'no-store'});if(!html.ok)return;const text=await html.text();const assets=[...text.matchAll(/(?:src|href)=["']([^"']+\.(?:js|css))["']/g)].map(match=>new URL(match[1],self.registration.scope).href);await cache.addAll(assets)}catch{ /* offline install keeps the basic shell */ }}
+self.addEventListener('install',event=>event.waitUntil(precacheShell()));
 self.addEventListener('message',event=>{if(event.data?.type==='SKIP_WAITING')self.skipWaiting()});
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('tongpin-')&&key!==VERSION).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 async function networkFirst(request,fallback){const cache=await caches.open(VERSION);try{const response=await fetch(request);if(response.ok)await cache.put(fallback,response.clone());return response}catch{return(await cache.match(fallback))||Response.error()}}
