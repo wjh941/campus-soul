@@ -63,19 +63,19 @@ type NavItem={id:View;label:string;icon:typeof Home;badge?:string;step?:string;f
 type NavGroup={label:string;hint:string;items:NavItem[]}
 const navGroups:NavGroup[] = [
   { label: '同频旅程', hint:'认识自己，再遇见彼此', items: [
-    { id: 'home' as View, label: '发现首页', icon: Home },
-    { id: 'assessment' as View, label: '认识自己', icon: Sparkles },
-    { id: 'exploration' as View, label: '探索内心', icon: PawPrint },
-    { id: 'preferences' as View, label: '表达期待', icon: Target },
-    { id: 'matches' as View, label: '遇见同频', icon: Heart, step:'03', featured:true },
+    { id: 'home' as View, label: '发现', icon: Home },
+    { id: 'assessment' as View, label: '3 分钟自测', icon: Sparkles },
+    { id: 'exploration' as View, label: '探索结果', icon: PawPrint },
+    { id: 'preferences' as View, label: '设置匹配偏好', icon: Target },
+    { id: 'matches' as View, label: '查看我的匹配', icon: Heart, step:'03', featured:true },
   ]},
   { label: '互动空间', hint:'动态、匿名与真实连接', items: [
     { id: 'moments' as View, label: '同频动态', icon: Compass },
     { id: 'anonymous' as View, label: '匿名相遇', icon: VenetianMask },
-    { id: 'messages' as View, label: '我的消息', icon: MessageCircle },
+    { id: 'messages' as View, label: '消息', icon: MessageCircle },
   ]},
   { label: '我的同频', hint:'资料与会员权益', items: [
-    { id: 'profile' as View, label: '个人主页', icon: User },
+    { id: 'profile' as View, label: '我的主页', icon: User },
     { id: 'membership' as View, label: '会员与支持', icon: Coffee },
   ]},
   { label: '安全与帮助', hint:'关系管理和平台规则', items: [
