@@ -38,7 +38,7 @@ async function uploadMedia(user:User,file:File,kind:'avatar'|'photo'){
   if(file.size>5*1024*1024)throw new Error('图片不能超过 5 MB')
   const extensions:Record<string,string>={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'};const ext=extensions[file.type];if(!ext)throw new Error('仅支持 JPG、PNG 或 WebP');const path=`${user.id}/${kind}-${crypto.randomUUID()}.${ext}`
   const {error}=await supabase.storage.from('profile-media').upload(path,file,{contentType:file.type,upsert:false});if(error)throw error
-  return supabase.storage.from('profile-media').getPublicUrl(path).data.publicUrl
+  const {data}=await supabase.storage.from('profile-media').createSignedUrl(path,60*60);if(!data?.signedUrl)throw new Error('图片访问链接生成失败');return data.signedUrl
 }
 export async function uploadAvatar(user:User,file:File){const uploaded=await uploadMedia(user,file,'avatar');try{await saveProfile(user.id,{avatar_url:uploaded})}catch(error){const path=uploaded.split('/').slice(-2).join('/');await supabase?.storage.from('profile-media').remove([path]).catch(()=>undefined);throw error}return uploaded}
 export async function addProfilePhoto(user:User,file:File,position:number){
