@@ -227,9 +227,8 @@ function App() {
       target.style.setProperty('--ripple-x', `${event.clientX - rect.left}px`)
       target.style.setProperty('--ripple-y', `${event.clientY - rect.top}px`)
       target.classList.remove('ripple-active')
-      void target.offsetWidth
-      target.classList.add('ripple-active')
-      window.setTimeout(() => target.classList.remove('ripple-active'), 480)
+      window.requestAnimationFrame(() => target.classList.add('ripple-active'))
+      window.setTimeout(() => target.classList.remove('ripple-active'), 360)
     }
     document.addEventListener('pointerdown', press, { passive: true })
     return () => document.removeEventListener('pointerdown', press)
@@ -241,12 +240,12 @@ function App() {
   useEffect(()=>()=>{if(toastTimer.current)clearTimeout(toastTimer.current)},[])
   const syncProfileAndMatches = (userId: string) => {
     if(syncRef.current?.userId===userId)return syncRef.current.promise
-    const promise=(async()=>{setMatchesLoading(true);try { if(supabase){const pending=Object.entries(localStorage).filter(([key])=>key.startsWith('tongpin-explore-'));if(pending.length){const selfAssessment=Object.fromEntries(pending.map(([key,value])=>[key.replace('tongpin-explore-',''),value]));const {error}=await supabase.from('profiles').update({self_assessment:selfAssessment,updated_at:new Date().toISOString()}).eq('id',userId);if(!error)pending.forEach(([key])=>localStorage.removeItem(key))}} const [bundle, matches, intelligent] = await withTimeout(Promise.all([fetchProfileBundle(userId), fetchMatches(), fetchIntelligentMapped().catch(() => [])]),12000,'匹配数据加载超时，已保留演示内容'); setProfileBundle(bundle); setShowLegal(!bundle.profile.accepted_terms_at || !bundle.profile.birth_date); const realPeople=intelligent.length?intelligent:matches;setMatchPeople(realPeople);setDataMode(realPeople.length?'real':'unavailable') } catch (error) { notify(friendlyError(error,'真实匹配加载失败')); setDataMode('unavailable');setMatchPeople([]) } finally { setMatchesLoading(false) }})()
+    const promise=(async()=>{setMatchesLoading(true);try { if(supabase){const pending=Object.entries(localStorage).filter(([key])=>key.startsWith('tongpin-explore-'));if(pending.length){const selfAssessment=Object.fromEntries(pending.map(([key,value])=>[key.replace('tongpin-explore-',''),value]));const {error}=await supabase.from('profiles').update({self_assessment:selfAssessment,updated_at:new Date().toISOString()}).eq('id',userId);if(!error)pending.forEach(([key])=>localStorage.removeItem(key))}} const [bundle, matches, intelligent] = await withTimeout(Promise.all([fetchProfileBundle(userId), fetchMatches(), fetchIntelligentMapped().catch(() => [])]),9000,'匹配数据加载超时，请稍后重试'); setProfileBundle(bundle); setShowLegal(!bundle.profile.accepted_terms_at || !bundle.profile.birth_date); const realPeople=intelligent.length?intelligent:matches;setMatchPeople(realPeople);setDataMode(realPeople.length?'real':'unavailable') } catch (error) { notify(friendlyError(error,'真实匹配加载失败')); setDataMode('unavailable');setMatchPeople([]) } finally { setMatchesLoading(false) }})()
     syncRef.current={userId,promise};void promise.finally(()=>{if(syncRef.current?.promise===promise)syncRef.current=null});return promise
   }
   const syncPosts = async (userId?: string) => {
     if (!isSupabaseConfigured) return
-    try { const remote = await withTimeout(fetchSocialPosts(userId),10000,'动态加载超时'); setPosts(remote) } catch (error) { setPosts([]); notify(friendlyError(error,'动态加载失败，请稍后重试')) }
+    try { const remote = await withTimeout(fetchSocialPosts(userId),7000,'动态加载超时'); setPosts(remote) } catch (error) { setPosts([]); notify(friendlyError(error,'动态加载失败，请稍后重试')) }
   }
   useEffect(() => {
     if (!supabase) return
@@ -294,7 +293,7 @@ function App() {
   const missingProfile=Math.ceil((100-profileCompletion)/Math.max(1,Math.round(100/profileChecks.length)))
   const filteredMatches=useMemo(()=>matchFilter==='high'?matchPeople.filter(person=>person.score>=80):matchFilter==='school'&&profile?matchPeople.filter(person=>person.school===profile.school):matchPeople,[matchPeople,matchFilter,profile])
   const discoveryPeople:MatchPerson[] = dataMode==='real' && nearbyPeople.length ? nearbyPeople : dataMode==='demo' ? matchPeople.slice(0,8).map(person => 'userId' in person ? person : {...person,id:String(person.id),userId:'',reasons:['兴趣方向彼此呼应','生活节奏相近'],verified:false,distanceKm:Number.parseFloat(person.distance)||2.4,bearing:(Number(person.id)*67)%360}) : []
-  const dailyPulse=<Suspense fallback={null}><DailyPulse people={dataMode==='real'?matchPeople.filter((person):person is MatchPerson=>'userId' in person):[]} onOpen={person=>setSelectedPerson(person)} onOpenAssessment={()=>go('assessment')} onNotice={notify}/></Suspense>
+  const dailyPulse=<Suspense fallback={<div className="discovery-loading"><LoaderCircle className="spin" /></div>}><DailyPulse people={dataMode==='real'?matchPeople.filter((person):person is MatchPerson=>'userId' in person):[]} onOpen={person=>setSelectedPerson(person)} onOpenAssessment={()=>go('assessment')} onNotice={notify}/></Suspense>
   return <div className={`app-shell ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}><a className="skip-link" href="#main-content">跳转到主内容</a>
     <aside id="app-sidebar" className={`sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`} aria-label="主导航">
       <div className="sidebar-head"><button className="brand" onClick={() => go('home')} aria-label="返回首页"><span><Sparkles size={18} /></span><div><b>同频</b><small>REAL CONNECTIONS</small></div></button><button className="collapse-toggle" onClick={() => setSidebarCollapsed(x => !x)} aria-label={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}>{sidebarCollapsed ? <PanelLeftOpen /> : <PanelLeftClose />}</button><button className="mobile-close" onClick={closeMobileMenu} aria-label="关闭菜单"><X /></button></div>
