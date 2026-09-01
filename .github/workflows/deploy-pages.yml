@@ -26,6 +26,9 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
       - uses: actions/configure-pages@v5
+        id: pages
+      - name: Verify production build output
+        run: test -f dist/index.html && test -f dist/manifest.webmanifest && test -f dist/sw.js
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
