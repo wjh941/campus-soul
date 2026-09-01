@@ -63,8 +63,8 @@ export async function fetchPreferenceMatches(page=0,pageSize=9):Promise<MatchPer
   if(!supabase)return[];const{data,error}=await supabase.rpc('get_preference_recommendations',{page_size:pageSize,page_offset:page*pageSize});if(error)throw error
   return await mapMatches(data??[])
 }
-export async function saveRecommendationPreferences(userId:string,settings:{age_min:number;age_max:number;preferred_genders:string[];preferred_interests:string[];preferred_values:string[];same_school_only:boolean;same_city_only:boolean;preferred_life_stages:string[];verified_only:boolean;minimum_match_score:number;recommendation_sort:string}){
-  if(!supabase)throw new Error('Supabase 尚未配置');const{error}=await supabase.from('preferences').update({...settings,updated_at:new Date().toISOString()}).eq('user_id',userId);if(error)throw error
+export async function saveRecommendationPreferences(userId:string,settings:{age_min:number;age_max:number;preferred_genders:string[];preferred_interests:string[];preferred_values:string[];same_school_only:boolean;same_city_only:boolean;preferred_life_stages:string[];verified_only:boolean;minimum_match_score:number;recommendation_sort:string;ideal_requirements?:Record<string,string[]>}){
+  if(!supabase)throw new Error('Supabase 尚未配置');const {ideal_requirements,...preferenceSettings}=settings;const payload=ideal_requirements?{...preferenceSettings,ideal_requirements,updated_at:new Date().toISOString()}:{...preferenceSettings,updated_at:new Date().toISOString()};const{error}=await supabase.from('preferences').update(payload).eq('user_id',userId);if(error)throw error
 }
 export async function blockUser(targetId:string){if(!supabase)throw new Error('Supabase 尚未配置');const{error}=await supabase.rpc('block_user',{target_user:targetId});if(error)throw error}
 export async function reportUser(userId:string,targetId:string,reason:string,details=''){if(!supabase)throw new Error('Supabase 尚未配置');const{error}=await supabase.from('reports').insert({reporter_id:userId,target_user_id:targetId,reason,details});if(error)throw error}
