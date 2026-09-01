@@ -205,7 +205,7 @@ function App() {
   const [showComposer, setShowComposer] = useState(false)
   const [notifications, setNotifications] = useState(false)
   const [session, setSession] = useState<Session | null>(null)
-  useEffect(()=>{if(!session||!supabase){setNotifications(false);return};let active=true;const refresh=async()=>{const {count}=await supabase.from('notifications').select('id',{count:'exact',head:true}).eq('user_id',session.user.id).is('read_at',null);if(active)setNotifications(Boolean(count))};void refresh();const channel=supabase.channel(`notifications:${session.user.id}`).on('postgres_changes',{event:'*',schema:'public',table:'notifications',filter:`user_id=eq.${session.user.id}`},()=>void refresh()).subscribe();return()=>{active=false;void supabase.removeChannel(channel)}},[session])
+  useEffect(()=>{if(!session||!supabase){setNotifications(false);return};let active=true;const client=supabase;const refresh=async()=>{const {count}=await client.from('notifications').select('id',{count:'exact',head:true}).eq('user_id',session.user.id).is('read_at',null);if(active)setNotifications(Boolean(count))};void refresh();const channel=client.channel(`notifications:${session.user.id}`).on('postgres_changes',{event:'*',schema:'public',table:'notifications',filter:`user_id=eq.${session.user.id}`},()=>void refresh()).subscribe();return()=>{active=false;void client.removeChannel(channel)}},[session])
   const [authReady,setAuthReady]=useState(!isSupabaseConfigured)
    const [authError,setAuthError]=useState(false),[authAttempt,setAuthAttempt]=useState(0)
   const [showAuth, setShowAuth] = useState(false)
