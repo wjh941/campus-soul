@@ -11,6 +11,7 @@ export type MatchPerson = {
   distanceKm?: number; bearing?: number
 }
 const fallbackAvatar='https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&auto=format&fit=crop'
+export async function resolveProfileMedia(path:string|null|undefined){if(!path||path.startsWith('http'))return path??null;if(!supabase)return null;const {data,error}=await supabase.storage.from('profile-media').createSignedUrl(path,60*60);if(error)throw error;return data.signedUrl}
 
 export async function fetchProfileBundle(userId:string):Promise<ProfileBundle>{
   if(!supabase) throw new Error('Supabase 尚未配置')
@@ -23,7 +24,7 @@ export async function fetchProfileBundle(userId:string):Promise<ProfileBundle>{
   if(!preference) throw new Error('偏好资料不存在')
   const safeProfile={...profile,interests:Array.isArray(profile.interests)?profile.interests:[],lifestyle:Array.isArray(profile.lifestyle)?profile.lifestyle:[],relationship_values:Array.isArray(profile.relationship_values)?profile.relationship_values:[],self_assessment:profile.self_assessment??{}}
   const safePreference={...preference,desired_traits:Array.isArray(preference.desired_traits)?preference.desired_traits:[],preferred_genders:Array.isArray(preference.preferred_genders)?preference.preferred_genders:[],preferred_interests:Array.isArray(preference.preferred_interests)?preference.preferred_interests:[],preferred_values:Array.isArray(preference.preferred_values)?preference.preferred_values:[],preferred_lifestyle:Array.isArray(preference.preferred_lifestyle)?preference.preferred_lifestyle:[],preferred_life_stages:Array.isArray(preference.preferred_life_stages)?preference.preferred_life_stages:[]}
-  return {profile:safeProfile,preference:safePreference,photos:photos??[]}
+  const resolvedAvatar=await resolveProfileMedia(safeProfile.avatar_url);const resolvedPhotos=await Promise.all((photos??[]).map(async photo=>({...photo,url:(await resolveProfileMedia(photo.url))??photo.url})));return {profile:{...safeProfile,avatar_url:resolvedAvatar},preference:safePreference,photos:resolvedPhotos}
 }
 
 export async function saveProfile(userId:string, profile:Database['public']['Tables']['profiles']['Update'], preference?:Database['public']['Tables']['preferences']['Update']){
@@ -38,9 +39,9 @@ async function uploadMedia(user:User,file:File,kind:'avatar'|'photo'){
   if(file.size>5*1024*1024)throw new Error('图片不能超过 5 MB')
   const extensions:Record<string,string>={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'};const ext=extensions[file.type];if(!ext)throw new Error('仅支持 JPG、PNG 或 WebP');const path=`${user.id}/${kind}-${crypto.randomUUID()}.${ext}`
   const {error}=await supabase.storage.from('profile-media').upload(path,file,{contentType:file.type,upsert:false});if(error)throw error
-  const {data}=await supabase.storage.from('profile-media').createSignedUrl(path,60*60);if(!data?.signedUrl)throw new Error('图片访问链接生成失败');return data.signedUrl
+  return path
 }
-export async function uploadAvatar(user:User,file:File){const uploaded=await uploadMedia(user,file,'avatar');try{await saveProfile(user.id,{avatar_url:uploaded})}catch(error){const path=uploaded.split('/').slice(-2).join('/');await supabase?.storage.from('profile-media').remove([path]).catch(()=>undefined);throw error}return uploaded}
+export async function uploadAvatar(user:User,file:File){const uploaded=await uploadMedia(user,file,'avatar');await saveProfile(user.id,{avatar_url:uploaded});return uploaded}
 export async function addProfilePhoto(user:User,file:File,position:number){
   if(!supabase)throw new Error('Supabase 尚未配置');const url=await uploadMedia(user,file,'photo')
   const {error}=await supabase.from('profile_photos').upsert({user_id:user.id,url,position});if(error)throw error;return url

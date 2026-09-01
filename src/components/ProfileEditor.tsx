@@ -71,7 +71,7 @@ export default function ProfileEditor({ user, onClose, onSaved }: Props) {
           <label>行业<input value={profile.industry ?? ''} onChange={e => update({ industry: e.target.value })} /></label>
           <label>专业<input value={profile.major ?? ''} onChange={e => update({ major: e.target.value })} /></label>
           <label>年级<input value={profile.grade ?? ''} onChange={e => update({ grade: e.target.value })} /></label>
-          <label>出生年份<input type="number" min="1940" max="2008" value={profile.birth_year ?? 2003} onChange={e => update({ birth_year: Number(e.target.value) })} /></label>
+          <label>出生年份<input type="number" min="1940" max="2008" value={profile.birth_year ?? 2003} disabled aria-describedby="birth-year-locked" /><small id="birth-year-locked">由年龄与协议确认流程管理，不能在资料编辑中修改。</small></label>
           <label>性别<select value={profile.gender ?? '不公开'} onChange={e => update({ gender: e.target.value })}><option>不公开</option><option>女</option><option>男</option><option>非二元</option></select></label>
           <label>MBTI<input maxLength={20} value={profile.personality ?? ''} onChange={e => update({ personality: e.target.value.toUpperCase() })} placeholder="例如 INFJ" /></label>
           <label>家乡<input value={profile.hometown ?? ''} onChange={e => update({ hometown: e.target.value })} /></label>
