@@ -181,9 +181,9 @@ function AuthModal({ onClose }: { onClose: () => void }) {
 
 function App() {
   const [view, setView] = useState<View>(viewFromUrl)
-  const [posts, setPosts] = useState(seedPosts)
+  const [posts, setPosts] = useState(isSupabaseConfigured ? [] : seedPosts)
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null)
-  const [matchPeople, setMatchPeople] = useState<Person[]>(people)
+  const [matchPeople, setMatchPeople] = useState<Person[]>(isSupabaseConfigured ? [] : people)
   const [matchesLoading, setMatchesLoading] = useState(false)
   const [matchFilter,setMatchFilter]=useState<'selected'|'high'|'school'>('selected')
   const [profileBundle, setProfileBundle] = useState<ProfileBundle>()
@@ -266,7 +266,7 @@ function App() {
   const removePost = async (id: string | number) => { const user=requireUser();if(!user)return;try{await deletePost(String(id),user.id);setPosts(x=>x.filter(p=>p.id!==id));notify('动态已删除')}catch(error){notify(error instanceof Error?error.message:'删除失败')} }
   const like = async (id: string | number) => { const current = posts.find(p => p.id === id); if (!current) return; if (isSupabaseConfigured) { const user = requireUser(); if (!user) return; try { await togglePostLike(String(id), user.id, current.liked) } catch (error) { return notify(error instanceof Error ? error.message : '操作失败') } } setPosts(ps => ps.map(p => p.id === id ? { ...p, liked: !p.liked, likes: p.likes + (p.liked ? -1 : 1) } : p)) }
   const comment = async (id: string | number, text: string) => { if (isSupabaseConfigured) { const user = requireUser(); if (!user) return; try { await createComment(String(id), user.id, text); await syncPosts(user.id) } catch (error) { const message = error instanceof Error ? error.message : '评论失败'; notify(message); throw error instanceof Error ? error : new Error(message) }; return } setPosts(ps => ps.map(p => p.id === id ? { ...p, comments: [...p.comments, { id: Date.now(), name: '小满', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop', text }] } : p)) }
-  const signOut = async () => { await supabase?.auth.signOut(); setSession(null);setProfileBundle(undefined);setMatchPeople(people);setDataMode(isSupabaseConfigured?'unavailable':'demo');setPosts(isSupabaseConfigured?[]:seedPosts);if(['data','admin','account','profile','messages'].includes(view))go('home');notify('已安全退出') }
+  const signOut = async () => { await supabase?.auth.signOut(); setSession(null);setProfileBundle(undefined);setMatchPeople(isSupabaseConfigured?[]:people);setDataMode(isSupabaseConfigured?'unavailable':'demo');setPosts(isSupabaseConfigured?[]:seedPosts);if(['data','admin','account','profile','messages'].includes(view))go('home');notify('已安全退出') }
   const safetyPerson = async (person: Person, action: 'report' | 'block') => {
     const user = requireUser(); const targetId = 'userId' in person ? person.userId : undefined; if (!user || !targetId) return notify('展示资料无法执行此操作')
     try { if (action === 'block') { await blockUser(targetId); setMatchPeople(items => items.filter(item => !('userId' in item) || item.userId !== targetId)); notify(`已屏蔽 ${person.name}`) } else { await reportUser(user.id, targetId, '不恰当的个人资料'); notify('举报已提交，我们会尽快审核') } setSelectedPerson(null) } catch (error) { notify(error instanceof Error ? error.message : '操作失败') }
