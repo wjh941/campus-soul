@@ -47,8 +47,8 @@ export async function addProfilePhoto(user:User,file:File,position:number){
   const {error}=await supabase.from('profile_photos').upsert({user_id:user.id,url,position});if(error)throw error;return url
 }
 
-function mapMatches(data: Database['public']['Functions']['get_match_recommendations']['Returns']): MatchPerson[] {
-  return data.map((p,i)=>({id:p.user_id,userId:p.user_id,name:p.nickname,age:p.birth_year?new Date().getFullYear()-p.birth_year:20,school:p.school,major:p.major??'探索中',score:p.overall_score,distance:'同城校园',avatar:p.avatar_url??fallbackAvatar,tags:[p.personality,...p.interests].filter(Boolean).slice(0,3) as string[],quote:p.bio??'期待认识真诚、同频的人。',color:['#ff715b','#7c5cff','#34b991','#2f8cff'][i%4],dimensions:[p.value_score,p.interest_score,p.lifestyle_score],reasons:p.reasons,verified:p.verified}))
+async function mapMatches(data: Database['public']['Functions']['get_match_recommendations']['Returns']): Promise<MatchPerson[]> {
+  return Promise.all(data.map(async(p,i)=>({id:p.user_id,userId:p.user_id,name:p.nickname,age:p.birth_year?new Date().getFullYear()-p.birth_year:20,school:p.school,major:p.major??'探索中',score:p.overall_score,distance:'同城校园',avatar:(await resolveProfileMedia(p.avatar_url))??fallbackAvatar,tags:[p.personality,...p.interests].filter(Boolean).slice(0,3) as string[],quote:p.bio??'期待认识真诚、同频的人。',color:['#ff715b','#7c5cff','#34b991','#2f8cff'][i%4],dimensions:[p.value_score,p.interest_score,p.lifestyle_score],reasons:p.reasons,verified:p.verified})))
 }
 export async function saveApproximateLocation(lat:number,lng:number,accuracy?:number){if(!supabase)throw new Error('Supabase 尚未配置');const{error}=await supabase.rpc('save_approximate_location',{lat,lng,accuracy:accuracy??null});if(error)throw error}
 export async function disableLocation(){if(!supabase)return;const{error}=await supabase.rpc('disable_location');if(error)throw error}
@@ -56,12 +56,12 @@ export async function fetchNearbyMatches(radius=100):Promise<MatchPerson[]>{if(!
 export async function fetchIntelligentMapped():Promise<MatchPerson[]> { if(!supabase)return[]; const {data,error}=await supabase.rpc('get_intelligent_matches_v2',{result_limit:30}); if(error)throw error; return (data??[]).map((p,i)=>({id:p.user_id,userId:p.user_id,name:p.nickname,age:p.birth_year?new Date().getFullYear()-p.birth_year:20,school:p.school,major:p.major??'探索中',score:p.overall_score,distance:'同频推荐',avatar:p.avatar_url??fallbackAvatar,tags:[p.personality,...p.interests].filter(Boolean).slice(0,3)as string[],quote:p.bio??'期待认识真诚、同频的人。',color:['#ff715b','#7c5cff','#34b991','#2f8cff'][i%4],dimensions:[p.value_score,p.interest_score,p.lifestyle_score],reasons:p.reasons,topics:p.topics,analysis:p.analysis as Record<string,number>,verified:p.verified})) }
 export async function fetchMatches():Promise<MatchPerson[]>{
   if(!supabase)return[];const {data,error}=await supabase.rpc('get_match_recommendations',{result_limit:30});if(error)throw error
-  return mapMatches(data??[])
+  return await mapMatches(data??[])
 }
 
 export async function fetchPreferenceMatches(page=0,pageSize=9):Promise<MatchPerson[]>{
   if(!supabase)return[];const{data,error}=await supabase.rpc('get_preference_recommendations',{page_size:pageSize,page_offset:page*pageSize});if(error)throw error
-  return mapMatches(data??[])
+  return await mapMatches(data??[])
 }
 export async function saveRecommendationPreferences(userId:string,settings:{age_min:number;age_max:number;preferred_genders:string[];preferred_interests:string[];preferred_values:string[];same_school_only:boolean;same_city_only:boolean;preferred_life_stages:string[];verified_only:boolean;minimum_match_score:number;recommendation_sort:string}){
   if(!supabase)throw new Error('Supabase 尚未配置');const{error}=await supabase.from('preferences').update({...settings,updated_at:new Date().toISOString()}).eq('user_id',userId);if(error)throw error
