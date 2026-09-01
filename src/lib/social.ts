@@ -1,5 +1,6 @@
 import type { User } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from './supabase'
+import { resolveProfileMedia } from './profiles'
 
 export type SocialComment = { id: string | number; name: string; avatar: string; text: string }
 export type SocialPost = {
@@ -24,29 +25,29 @@ export async function fetchSocialPosts(userId?: string): Promise<SocialPost[]> {
   const authorIds = [...new Set(rows.map(row => row.author_id))]
   const postIds = rows.map(row => row.id)
   const [{ data: profiles }, { data: comments }, { data: likes }] = await Promise.all([
-    supabase.from('profiles').select('*').in('id', authorIds),
+    supabase.from('profiles').select('id,nickname,avatar_url,school').in('id', authorIds),
     postIds.length ? supabase.from('comments').select('*').in('post_id', postIds).order('created_at') : Promise.resolve({ data: [] }),
     postIds.length ? supabase.from('post_likes').select('*').in('post_id', postIds) : Promise.resolve({ data: [] }),
   ])
   const commentAuthors = [...new Set((comments ?? []).map(c => c.author_id))]
   const missingAuthors = commentAuthors.filter(id => !authorIds.includes(id))
-  const { data: extraProfiles } = missingAuthors.length ? await supabase.from('profiles').select('*').in('id', missingAuthors) : { data: [] }
+  const { data: extraProfiles } = missingAuthors.length ? await supabase.from('profiles').select('id,nickname,avatar_url,school').in('id', missingAuthors) : { data: [] }
   const allProfiles = [...(profiles ?? []), ...(extraProfiles ?? [])]
   const profileMap = new Map(allProfiles.map(profile => [profile.id, profile]))
-  return rows.map(row => {
+  return await Promise.all(rows.map(async row => {
     const author = profileMap.get(row.author_id)
     const postLikes = (likes ?? []).filter(like => like.post_id === row.id)
     return {
-      id: row.id, authorId: row.author_id, name: author?.nickname ?? '同频用户', avatar: author?.avatar_url ?? fallbackAvatar,
+      id: row.id, authorId: row.author_id, name: author?.nickname ?? '同频用户', avatar: (await resolveProfileMedia(author?.avatar_url)) ?? fallbackAvatar,
       school: author?.school ?? '认证高校', time: relativeTime(row.created_at), text: row.content,
       image: row.image_url ?? undefined, tags: Array.isArray(row.tags)?row.tags:[], likes: postLikes.length,
       liked: Boolean(userId && postLikes.some(like => like.user_id === userId)),
       comments: (comments ?? []).filter(comment => comment.post_id === row.id).map(comment => ({
         id: comment.id, name: profileMap.get(comment.author_id)?.nickname ?? '同频用户',
-        avatar: profileMap.get(comment.author_id)?.avatar_url ?? fallbackAvatar, text: comment.content,
+        avatar: (profileMap.get(comment.author_id)?.avatar_url?.startsWith('http')?profileMap.get(comment.author_id)?.avatar_url:null) ?? fallbackAvatar, text: comment.content,
       })),
     }
-  })
+  }))
 }
 
 const maxPostImageBytes = 5 * 1024 * 1024
