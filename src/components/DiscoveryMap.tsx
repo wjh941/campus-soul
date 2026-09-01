@@ -3,8 +3,8 @@ import { Crosshair, Heart, LocateFixed, LockKeyhole, MapPin, Navigation, Sliders
 import { motion } from 'framer-motion'
 import type { MatchPerson } from '../lib/profiles'
 
-type Props={people:MatchPerson[];located:boolean;demo?:boolean;locating:boolean;radius:number;onRadius:(value:number)=>void;onLocate:()=>void;onOpen:(person:MatchPerson)=>void;onHeart:(person:MatchPerson)=>void}
-export default function DiscoveryMap({people,located,demo=false,locating,radius,onRadius,onLocate,onOpen,onHeart}:Props){
+type Props={people:MatchPerson[];located:boolean;demo?:boolean;updatedAt?:string|null;onDisable?:()=>void;locating:boolean;radius:number;onRadius:(value:number)=>void;onLocate:()=>void;onOpen:(person:MatchPerson)=>void;onHeart:(person:MatchPerson)=>void}
+export default function DiscoveryMap({people,located,demo=false,updatedAt,onDisable,locating,radius,onRadius,onLocate,onOpen,onHeart}:Props){
  const[selected,setSelected]=useState<string|undefined>(people[0]?.id)
  const shown=useMemo(()=>people.slice(0,8),[people]),active=shown.find(x=>x.id===selected)??shown[0]
  return <section className={`discovery-hero ${!shown.length?'discovery-empty':''}`}>
@@ -16,6 +16,6 @@ export default function DiscoveryMap({people,located,demo=false,locating,radius,
    {!located&&<button className="map-permission" onClick={onLocate}><Navigation/><b>开启位置，点亮附近的人</b><span>我们不会展示你的精确坐标</span></button>}
    {active&&<motion.div className="map-person-card" key={active.id} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}}><img src={active.avatar} alt="" loading="lazy" decoding="async"/><div><b>{active.name} · {active.age}</b><span><MapPin/>{active.distance} · {active.score>=80?'高契合':'匹配线索'}</span></div><button type="button" disabled={demo} onClick={()=>onOpen(active)}>{demo?'注册后查看':'查看'}</button><button type="button" className="map-heart" disabled={demo} aria-label={demo?'演示资料，注册后查看真实推荐':`向${active.name}发送心动`} onClick={()=>onHeart(active)}><Heart/></button></motion.div>}
   </div>
-  <div className="radius-control"><SlidersHorizontal aria-hidden="true"/><div className="radius-presets" aria-label="快速选择发现半径">{[5,20,50,100].map(value=><button type="button" className={radius===value?'active':''} onClick={()=>onRadius(value)} aria-pressed={radius===value} key={value}>{value}km</button>)}</div><label htmlFor="discovery-radius">发现半径 <b>{radius} km</b><input id="discovery-radius" type="range" min="5" max="100" step="5" value={radius} aria-valuetext={`${radius} 公里`} onChange={e=>onRadius(Number(e.target.value))}/></label><button aria-label="使用当前位置重新定位" disabled={locating} onClick={onLocate}><Crosshair/>{locating?'定位中':'重新定位'}</button></div>
+  <div className="radius-control"><SlidersHorizontal aria-hidden="true"/><div className="radius-presets" aria-label="快速选择发现半径">{[5,20,50,100].map(value=><button type="button" className={radius===value?'active':''} onClick={()=>onRadius(value)} aria-pressed={radius===value} key={value}>{value}km</button>)}</div><label htmlFor="discovery-radius">发现半径 <b>{radius} km</b><input id="discovery-radius" type="range" min="5" max="100" step="5" value={radius} aria-valuetext={`${radius} 公里`} onChange={e=>onRadius(Number(e.target.value))}/></label><button aria-label="使用当前位置重新定位" disabled={locating} onClick={onLocate}><Crosshair/>{locating?'定位中':'重新定位'}</button></div>{located&&<div className="location-controls"><small>位置已模糊处理{updatedAt?` · 更新于 ${new Date(updatedAt).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}`:''}</small><button type="button" onClick={()=>void onDisable?.()}>关闭附近发现并删除位置</button></div>}
  </section>
 }
