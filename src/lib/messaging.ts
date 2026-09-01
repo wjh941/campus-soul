@@ -1,5 +1,6 @@
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from './supabase'
+import { resolveProfileMedia } from './profiles'
 
 export type ChatMessage = { id: string; matchId: string; senderId: string; content: string; createdAt: string }
 export type Conversation = {
@@ -22,7 +23,7 @@ export async function fetchConversations(userId: string): Promise<Conversation[]
   const { data: matches, error } = await client.from('matches').select('*').eq('active', true).order('created_at', { ascending: false })
   if (error) throw error
   const partnerIds = matches.map(match => match.user_a === userId ? match.user_b : match.user_a)
-  const { data: profiles } = partnerIds.length ? await client.from('profiles').select('*').in('id', partnerIds) : { data: [] }
+  const { data: profiles } = partnerIds.length ? await client.from('profiles').select('id,nickname,avatar_url,school').in('id', partnerIds) : { data: [] }
   const { data: receipts } = matches.length ? await client.from('conversation_reads').select('*').eq('user_id', userId) : { data: [] }
   const conversations = await Promise.all(matches.map(async match => {
     const partnerId = match.user_a === userId ? match.user_b : match.user_a
@@ -30,7 +31,7 @@ export async function fetchConversations(userId: string): Promise<Conversation[]
     const { data: messages } = await client.from('messages').select('*').eq('match_id', match.id).order('created_at', { ascending: false }).limit(50)
     const receipt = receipts?.find(item => item.match_id === match.id)
     const unread = (messages ?? []).filter(message => message.sender_id !== userId && (!receipt || new Date(message.created_at) > new Date(receipt.last_read_at))).length
-    return { id: match.id, partnerId, name: partner?.nickname ?? '同频用户', avatar: partner?.avatar_url ?? fallbackAvatar, school: partner?.school ?? '认证高校', lastMessage: messages?.[0]?.content ?? '你们已互相心动，打个招呼吧 ✨', lastAt: messages?.[0]?.created_at ?? match.created_at, unread }
+    return { id: match.id, partnerId, name: partner?.nickname ?? '同频用户', avatar: (await resolveProfileMedia(partner?.avatar_url)) ?? fallbackAvatar, school: partner?.school ?? '认证高校', lastMessage: messages?.[0]?.content ?? '你们已互相心动，打个招呼吧 ✨', lastAt: messages?.[0]?.created_at ?? match.created_at, unread }
   }))
   return conversations.sort((a, b) => new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime())
 }
