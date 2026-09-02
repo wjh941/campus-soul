@@ -39,7 +39,7 @@ const WaitlistCard=lazy(()=>import('./components/WaitlistCard'))
 
 type View = 'home' | 'exploration' | 'matches' | 'preferences' | 'assessment' | 'moments' | 'anonymous' | 'messages' | 'membership' | 'account' | 'legal' | 'data' | 'admin' | 'profile'
 const views:View[]=['home','exploration','matches','preferences','assessment','moments','anonymous','messages','membership','account','legal','data','admin','profile']
-const viewFromUrl=():View=>{const value=new URLSearchParams(location.search).get('view');return views.includes(value as View)?value as View:'home'}
+const viewFromUrl=():View=>{const value=new URLSearchParams(location.search).get('view')||location.pathname.split('/').filter(Boolean).at(-1);return views.includes(value as View)?value as View:'home'}
 type Comment = { id: string | number; name: string; avatar: string; text: string }
 type Post = {
   id: string | number; authorId?: string; name: string; avatar: string; school: string; time: string; text: string;

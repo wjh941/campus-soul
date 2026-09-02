@@ -16,7 +16,7 @@ export type Database = {
         Relationships: []
       }
       anonymous_sessions: {
-        Row: { id: string; user_a: string; user_b: string; status: string; reveal_a: boolean; reveal_b: boolean; compatibility_score: number; created_at: string; ended_at: string | null }
+        Row: { id: string; user_a: string; user_b: string; status: string; reveal_a: boolean; reveal_b: boolean; compatibility_score: number; created_at: string; ended_at: string | null; last_seen_at: string }
         Insert: never; Update: never; Relationships: []
       }
       anonymous_messages: {
@@ -157,6 +157,7 @@ export type Database = {
       save_approximate_location: { Args: { lat: number; lng: number; accuracy?: number | null }; Returns: undefined }
       disable_location: { Args: Record<string, never>; Returns: undefined }
        heartbeat_anonymous_queue: { Args: Record<string, never>; Returns: undefined }
+       heartbeat_anonymous_session: { Args: { target_session: string }; Returns: undefined }
       join_anonymous_queue: { Args: { chosen_mode?: string }; Returns: { state: string; session_id: string | null }[] }
       get_anonymous_session: { Args: Record<string, never>; Returns: Database['public']['Tables']['anonymous_sessions']['Row'][] }
       leave_anonymous_chat: { Args: { target_session: string }; Returns: undefined }

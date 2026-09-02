@@ -10,6 +10,7 @@ export type Conversation = {
 
 const fallbackAvatar = 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop'
 
+export async function endMatch(matchId:string){if(!supabase)throw new Error('Supabase 尚未配置');const{error}=await supabase.rpc('end_match',{target_match:matchId});if(error)throw error}
 export async function sendHeart(targetUserId: string) {
   if (!supabase) throw new Error('Supabase 尚未配置')
   const { data, error } = await supabase.rpc('send_heart', { target_user: targetUserId })
@@ -20,7 +21,7 @@ export async function sendHeart(targetUserId: string) {
 export async function fetchConversations(userId: string): Promise<Conversation[]> {
   if (!supabase) return []
   const client = supabase
-  const { data: matches, error } = await client.from('matches').select('*').eq('active', true).order('created_at', { ascending: false })
+  const { data: matches, error } = await client.from('matches').select('*').eq('active', true).or(`user_a.eq.${userId},user_b.eq.${userId}`).order('created_at', { ascending: false })
   if (error) throw error
   const partnerIds = matches.map(match => match.user_a === userId ? match.user_b : match.user_a)
   const { data: profiles } = partnerIds.length ? await client.from('public_profiles').select('id,nickname,avatar_url,school').in('id', partnerIds) : { data: [] }
