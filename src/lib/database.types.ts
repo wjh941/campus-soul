@@ -169,6 +169,7 @@ export type Database = {
       answer_anonymous_game: { Args: { game_id: string; choice: number }; Returns: number | null }
       get_revealed_partner: { Args: { target_session: string }; Returns: { id: string; nickname: string; avatar_url: string | null; life_stage: string; city: string | null; verified: boolean }[] }
       report_anonymous_session: { Args: { target_session: string; report_reason: string }; Returns: undefined }
+       report_and_leave_anonymous: { Args: { target_session: string; report_reason: string }; Returns: undefined }
       get_nearby_discovery: { Args: { result_limit?: number; max_distance_km?: number }; Returns: { user_id: string; nickname: string; avatar_url: string | null; school: string; major: string | null; birth_year: number | null; personality: string | null; bio: string | null; interests: string[]; verified: boolean; overall_score: number; interest_score: number; value_score: number; lifestyle_score: number; reasons: string[]; distance_km: number; bearing_degrees: number }[] }
     }
     Enums: { [_ in never]: never }
