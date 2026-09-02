@@ -10,9 +10,9 @@ export type Database = {
         Relationships: []
       }
       anonymous_queue: {
-        Row: { user_id: string; mode: string; joined_at: string }
-        Insert: { user_id: string; mode?: string; joined_at?: string }
-        Update: { mode?: string; joined_at?: string }
+        Row: { user_id: string; mode: string; joined_at: string; last_seen_at: string }
+        Insert: { user_id: string; mode?: string; joined_at?: string; last_seen_at?: string }
+        Update: { mode?: string; joined_at?: string; last_seen_at?: string }
         Relationships: []
       }
       anonymous_sessions: {
@@ -156,6 +156,7 @@ export type Database = {
       get_intelligent_matches: { Args: { result_limit?: number }; Returns: { user_id: string; nickname: string; avatar_url: string | null; school: string; major: string | null; birth_year: number | null; personality: string | null; bio: string | null; interests: string[]; verified: boolean; overall_score: number; value_score: number; lifestyle_score: number; interest_score: number; communication_score: number; intent_score: number; reasons: string[]; topics?: string[]; analysis: Json }[] }
       save_approximate_location: { Args: { lat: number; lng: number; accuracy?: number | null }; Returns: undefined }
       disable_location: { Args: Record<string, never>; Returns: undefined }
+       heartbeat_anonymous_queue: { Args: Record<string, never>; Returns: undefined }
       join_anonymous_queue: { Args: { chosen_mode?: string }; Returns: { state: string; session_id: string | null }[] }
       get_anonymous_session: { Args: Record<string, never>; Returns: Database['public']['Tables']['anonymous_sessions']['Row'][] }
       leave_anonymous_chat: { Args: { target_session: string }; Returns: undefined }

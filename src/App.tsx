@@ -12,7 +12,7 @@ import { createComment, createPost, deletePost, fetchSocialPosts, isSupabaseConf
 import { sendHeart } from './lib/messaging'
 import { friendlyError, safeStorage, withTimeout } from './lib/resilience'
 import { useDialogLifecycle } from './hooks/useDialogLifecycle'
-import { blockUser, disableLocation, fetchIntelligentMapped, fetchMatches, fetchNearbyMatches, fetchProfileBundle, reportUser, saveApproximateLocation, saveProfile, type MatchPerson, type ProfileBundle } from './lib/profiles'
+import { blockUser, disableLocation, fetchIntelligentMapped, fetchLocationState, fetchMatches, fetchNearbyMatches, fetchProfileBundle, reportUser, saveApproximateLocation, saveProfile, type MatchPerson, type ProfileBundle } from './lib/profiles'
 import './App.css'
 
 const DailyPulse = lazy(() => import('./components/DailyPulse'))
@@ -240,7 +240,7 @@ function App() {
   useEffect(()=>()=>{if(toastTimer.current)clearTimeout(toastTimer.current)},[])
   const syncProfileAndMatches = (userId: string) => {
     if(syncRef.current?.userId===userId)return syncRef.current.promise
-    const promise=(async()=>{setMatchesLoading(true);try { if(supabase){const pending=Object.entries(localStorage).filter(([key])=>key.startsWith('tongpin-explore-'));if(pending.length){const selfAssessment=Object.fromEntries(pending.map(([key,value])=>[key.replace('tongpin-explore-',''),value]));const {error}=await supabase.from('profiles').update({self_assessment:selfAssessment,updated_at:new Date().toISOString()}).eq('id',userId);if(!error)pending.forEach(([key])=>localStorage.removeItem(key))}} const [bundle, matches, intelligent] = await withTimeout(Promise.all([fetchProfileBundle(userId), fetchMatches(), fetchIntelligentMapped().catch(() => [])]),9000,'匹配数据加载超时，请稍后重试'); setProfileBundle(bundle); setShowLegal(!bundle.profile.accepted_terms_at || !bundle.profile.birth_date); const realPeople=intelligent.length?intelligent:matches;setMatchPeople(realPeople);setDataMode(realPeople.length?'real':'unavailable') } catch (error) { notify(friendlyError(error,'真实匹配加载失败')); setDataMode('unavailable');setMatchPeople([]) } finally { setMatchesLoading(false) }})()
+    const promise=(async()=>{setMatchesLoading(true);try { if(supabase){const pending=Object.entries(localStorage).filter(([key])=>key.startsWith('tongpin-explore-'));if(pending.length){const selfAssessment=Object.fromEntries(pending.map(([key,value])=>[key.replace('tongpin-explore-',''),value]));const {error}=await supabase.from('profiles').update({self_assessment:selfAssessment,updated_at:new Date().toISOString()}).eq('id',userId);if(!error)pending.forEach(([key])=>localStorage.removeItem(key))}} const [bundle, matches, intelligent] = await withTimeout(Promise.all([fetchProfileBundle(userId), fetchMatches(), fetchIntelligentMapped().catch(() => [])]),9000,'匹配数据加载超时，请稍后重试'); setProfileBundle(bundle); const location=await fetchLocationState();setLocationEnabled(Boolean(location?.enabled));setLocationUpdatedAt(location?.updated_at??null);setShowLegal(!bundle.profile.accepted_terms_at || !bundle.profile.birth_date); const realPeople=intelligent.length?intelligent:matches;setMatchPeople(realPeople);setDataMode(realPeople.length?'real':'unavailable') } catch (error) { notify(friendlyError(error,'真实匹配加载失败')); setDataMode('unavailable');setMatchPeople([]) } finally { setMatchesLoading(false) }})()
     syncRef.current={userId,promise};void promise.finally(()=>{if(syncRef.current?.promise===promise)syncRef.current=null});return promise
   }
   const syncPosts = async (userId?: string) => {
