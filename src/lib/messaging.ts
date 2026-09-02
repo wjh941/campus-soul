@@ -23,7 +23,7 @@ export async function fetchConversations(userId: string): Promise<Conversation[]
   const { data: matches, error } = await client.from('matches').select('*').eq('active', true).order('created_at', { ascending: false })
   if (error) throw error
   const partnerIds = matches.map(match => match.user_a === userId ? match.user_b : match.user_a)
-  const { data: profiles } = partnerIds.length ? await client.from('profiles').select('id,nickname,avatar_url,school').in('id', partnerIds) : { data: [] }
+  const { data: profiles } = partnerIds.length ? await client.from('public_profiles').select('id,nickname,avatar_url,school').in('id', partnerIds) : { data: [] }
   const { data: receipts } = matches.length ? await client.from('conversation_reads').select('*').eq('user_id', userId) : { data: [] }
   const conversations = await Promise.all(matches.map(async match => {
     const partnerId = match.user_a === userId ? match.user_b : match.user_a

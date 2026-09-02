@@ -123,7 +123,7 @@ export type Database = {
         Relationships: []
       }
     }
-    Views: { [_ in never]: never }
+    Views: { public_profiles: { Row: { id: string; nickname: string; school: string; major: string | null; avatar_url: string | null; verified: boolean; city: string | null; life_stage: string }; Relationships: [] } }
     Functions: {
       cancel_my_pending_order:{Args:{target_order:string};Returns:undefined}
       admin_commerce_summary:{Args:Record<string,never>;Returns:Json}

@@ -25,13 +25,13 @@ export async function fetchSocialPosts(userId?: string): Promise<SocialPost[]> {
   const authorIds = [...new Set(rows.map(row => row.author_id))]
   const postIds = rows.map(row => row.id)
   const [{ data: profiles }, { data: comments }, { data: likes }] = await Promise.all([
-    supabase.from('profiles').select('id,nickname,avatar_url,school').in('id', authorIds),
+    supabase.from('public_profiles').select('id,nickname,avatar_url,school').in('id', authorIds),
     postIds.length ? supabase.from('comments').select('*').in('post_id', postIds).order('created_at') : Promise.resolve({ data: [] }),
     postIds.length ? supabase.from('post_likes').select('*').in('post_id', postIds) : Promise.resolve({ data: [] }),
   ])
   const commentAuthors = [...new Set((comments ?? []).map(c => c.author_id))]
   const missingAuthors = commentAuthors.filter(id => !authorIds.includes(id))
-  const { data: extraProfiles } = missingAuthors.length ? await supabase.from('profiles').select('id,nickname,avatar_url,school').in('id', missingAuthors) : { data: [] }
+  const { data: extraProfiles } = missingAuthors.length ? await supabase.from('public_profiles').select('id,nickname,avatar_url,school').in('id', missingAuthors) : { data: [] }
   const allProfiles = [...(profiles ?? []), ...(extraProfiles ?? [])]
   const profileMap = new Map(allProfiles.map(profile => [profile.id, profile]))
   return await Promise.all(rows.map(async row => {
