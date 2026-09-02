@@ -160,6 +160,7 @@ export type Database = {
        heartbeat_anonymous_session: { Args: { target_session: string }; Returns: undefined }
       join_anonymous_queue: { Args: { chosen_mode?: string }; Returns: { state: string; session_id: string | null }[] }
       get_anonymous_session: { Args: Record<string, never>; Returns: Database['public']['Tables']['anonymous_sessions']['Row'][] }
+       heartbeat_anonymous_session: { Args: { target_session: string }; Returns: undefined }
       leave_anonymous_chat: { Args: { target_session: string }; Returns: undefined }
       request_anonymous_reveal: { Args: { target_session: string }; Returns: boolean }
       create_anonymous_game: { Args: { target_session: string; chosen_type: string }; Returns: string }
