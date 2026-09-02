@@ -326,4 +326,6 @@ function App() {
   </div>
 }
 
+{showNotifications&&session&&<Suspense fallback={null}><NotificationPanel userId={session.user.id} onClose={()=>setShowNotifications(false)} onNavigate={link=>go(link as View)} /></Suspense>}
+
 export default App
