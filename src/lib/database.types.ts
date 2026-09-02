@@ -139,6 +139,7 @@ export type Database = {
       get_preference_recommendations: { Args: { page_size?: number; page_offset?: number }; Returns: { user_id: string; nickname: string; avatar_url: string | null; school: string; major: string | null; birth_year: number | null; personality: string | null; bio: string | null; interests: string[]; lifestyle: string[]; relationship_values: string[]; verified: boolean; overall_score: number; interest_score: number; value_score: number; lifestyle_score: number; reasons: string[] }[] }
       block_user: { Args: { target_user: string }; Returns: undefined }
       end_match: { Args: { target_match: string }; Returns: undefined }
+       delete_my_message: { Args: { target_message: string }; Returns: undefined }
       review_verification: { Args: { request_id: string; decision: string; note?: string | null }; Returns: undefined }
       is_admin: { Args: Record<string, never>; Returns: boolean }
       accept_legal: { Args: { birthday: string }; Returns: undefined }

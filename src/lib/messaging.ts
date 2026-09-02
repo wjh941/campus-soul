@@ -44,6 +44,7 @@ export async function fetchMessages(matchId: string): Promise<ChatMessage[]> {
   return data.map(item => ({ id: item.id, matchId: item.match_id, senderId: item.sender_id, content: item.content, createdAt: item.created_at }))
 }
 
+export async function deleteMyMessage(messageId:string){if(!supabase)throw new Error('Supabase 尚未配置');const{error}=await supabase.rpc('delete_my_message',{target_message:messageId});if(error)throw error}
 export async function sendMessage(matchId: string, userId: string, content: string) {
   if (!supabase) throw new Error('Supabase 尚未配置')
   const value=content.trim()
