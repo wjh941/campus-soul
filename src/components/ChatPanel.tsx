@@ -11,7 +11,7 @@ import { blockUser, reportUser } from '../lib/profiles'
 function MiniAvatar({ src, size = 42 }: { src: string; size?: number }) { const [failed,setFailed]=useState(false); return failed?<span className="chat-avatar-fallback" style={{ width: size, height: size }} aria-label="用户头像不可用">?</span>:<img className="chat-avatar" style={{ width: size, height: size }} src={src} alt="用户头像" loading="lazy" decoding="async" onError={()=>setFailed(true)} /> }
 function time(value: string) { return new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit' }).format(new Date(value)) }
 
-export default function ChatPanel({ session, onRequireAuth }: { session: Session | null; onRequireAuth: () => void }) {
+export default function ChatPanel({ session, onRequireAuth, initialMatchId }: { session: Session | null; onRequireAuth: () => void; initialMatchId?: string }) {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [active, setActive] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -29,6 +29,7 @@ export default function ChatPanel({ session, onRequireAuth }: { session: Session
   const visibleConversations=useMemo(()=>{const value=query.trim().toLowerCase();return value?conversations.filter(item=>[item.name,item.school,item.lastMessage].some(text=>String(text??'').toLowerCase().includes(value))):conversations},[conversations,query])
   const loadConversations = useCallback(async () => { if (!session) return; setLoading(true); try { setConversations(await fetchConversations(session.user.id)); setError('') } catch (e) { setError(e instanceof Error ? e.message : '会话加载失败') } finally { setLoading(false) } }, [session])
   useEffect(()=>{if(!session)return;const timer=window.setTimeout(()=>void loadConversations(),0);return()=>clearTimeout(timer)},[session,loadConversations])
+  useEffect(()=>{if(initialMatchId&&conversations.length){const found=conversations.find(item=>item.id===initialMatchId);if(found)window.setTimeout(()=>setActive(found),0)}},[initialMatchId,conversations])
   useEffect(() => {
     if (!active || !session) return
 
