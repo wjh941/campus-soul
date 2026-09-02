@@ -251,7 +251,7 @@ function App() {
     if (!supabase) return
     withTimeout(supabase.auth.getSession(),8000,'登录状态读取超时').then(({ data }) => { setAuthReady(true);setAuthError(false);setSession(data.session); if (data.session) { void syncPosts(data.session.user.id); void syncProfileAndMatches(data.session.user.id) } }).catch(()=>{setAuthReady(true);setAuthError(true);setSession(null)})
     const client=supabase
-    const { data } = client.auth.onAuthStateChange((event, nextSession) => { setAuthReady(true);setSession(nextSession); if(event==='SIGNED_OUT')notify('登录状态已失效，请重新登录');if (nextSession) window.setTimeout(() => { void syncPosts(nextSession.user.id); void syncProfileAndMatches(nextSession.user.id) }, 0) })
+    const { data } = client.auth.onAuthStateChange((event, nextSession) => { setAuthReady(true);setSession(nextSession); if(event==='SIGNED_OUT')notify('登录状态已失效，请重新登录');if (nextSession) window.setTimeout(() => { void syncPosts(nextSession.user.id); void syncProfileAndMatches(nextSession.user.id); if(event==='SIGNED_IN') setShowOnboarding(true) }, 0) })
     const reconnect=()=>{void client.auth.getSession().then(({data:current})=>{if(current.session){void syncPosts(current.session.user.id);void syncProfileAndMatches(current.session.user.id);notify('网络已恢复，数据已重新同步')}})};addEventListener('tongpin:reconnected',reconnect)
     return () => {data.subscription.unsubscribe();removeEventListener('tongpin:reconnected',reconnect)}
   }, [authAttempt])
