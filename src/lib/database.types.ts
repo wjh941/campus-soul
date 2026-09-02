@@ -153,6 +153,7 @@ export type Database = {
       save_match_weights: { Args: { weights: Json }; Returns: undefined }
       save_match_feedback: { Args: { target: string; feedback_type: string }; Returns: undefined }
        save_daily_reflection: { Args: { reflection_day: number; answer: string }; Returns: undefined }
+       save_exploration_result: { Args: { test_id: string; result_title: string }; Returns: undefined }
       get_intelligent_matches_v2: { Args: { result_limit?: number }; Returns: { user_id: string; nickname: string; avatar_url: string | null; school: string; major: string | null; birth_year: number | null; personality: string | null; bio: string | null; interests: string[]; verified: boolean; overall_score: number; value_score: number; lifestyle_score: number; interest_score: number; communication_score: number; intent_score: number; reasons: string[]; topics: string[]; analysis: Json }[] }
       get_intelligent_matches: { Args: { result_limit?: number }; Returns: { user_id: string; nickname: string; avatar_url: string | null; school: string; major: string | null; birth_year: number | null; personality: string | null; bio: string | null; interests: string[]; verified: boolean; overall_score: number; value_score: number; lifestyle_score: number; interest_score: number; communication_score: number; intent_score: number; reasons: string[]; topics?: string[]; analysis: Json }[] }
       save_approximate_location: { Args: { lat: number; lng: number; accuracy?: number | null }; Returns: undefined }
