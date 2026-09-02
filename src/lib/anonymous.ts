@@ -5,7 +5,6 @@ export type AnonymousSession=Database['public']['Tables']['anonymous_sessions'][
 export type AnonymousMessage=Database['public']['Tables']['anonymous_messages']['Row']
 export type AnonymousGame=Database['public']['Tables']['anonymous_games']['Row']
 export async function heartbeatAnonymousQueue(){if(!supabase)throw new Error('Supabase 尚未配置');const{error}=await supabase.rpc('heartbeat_anonymous_queue');if(error)throw error}
-export async function heartbeatAnonymousQueue(){if(!supabase)throw new Error('Supabase 尚未配置');const{error}=await supabase.rpc('heartbeat_anonymous_queue');if(error)throw error}
 export async function heartbeatAnonymousSession(sessionId:string){if(!supabase)throw new Error('Supabase 尚未配置');const{error}=await supabase.rpc('heartbeat_anonymous_session',{target_session:sessionId});if(error)throw error}
 export async function joinAnonymous(mode:string){if(!supabase)throw new Error('Supabase 尚未配置');const{data,error}=await supabase.rpc('join_anonymous_queue',{chosen_mode:mode});if(error)throw error;return data?.[0]??{state:'waiting',session_id:null}}
 export async function getAnonymousSession(){if(!supabase)return null;const{data,error}=await supabase.rpc('get_anonymous_session');if(error)throw error;return data?.[0]??null}
