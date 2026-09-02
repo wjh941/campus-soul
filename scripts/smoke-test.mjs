@@ -4,6 +4,8 @@ const source = await (await import('node:fs/promises')).readFile(new URL('../src
 assert.match(source, /dataMode==='real'/)
 assert.match(source, /accepted_privacy_at/)
 assert.match(source, /showNotifications&&session/)
+assert.match(source, /matchId/)
+assert.match(source, /initialMatchId/)
 
 const workflow = await (await import('node:fs/promises')).readFile(new URL('../.github/workflows/deploy-pages.yml', import.meta.url), 'utf8')
 assert.match(workflow, /npm run build -- --base=\/campus-soul\//)
