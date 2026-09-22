@@ -1,0 +1,13 @@
+import { useMemo, useState } from 'react'
+import { motion } from 'framer-motion'
+import { ChevronRight, SlidersHorizontal, Sparkles } from 'lucide-react'
+import { useApp } from '../context/AppContext'
+import type { MatchPerson } from '../lib/profiles'
+import MatchCard from '../components/discovery/MatchCard'
+
+export default function Matches() {
+  const { session, profile, matchPeople, matchesLoading, go, heartPerson, setSelectedPerson, setInsightPerson, setShowOnboarding } = useApp()
+  const [matchFilter, setMatchFilter] = useState<'selected' | 'high' | 'school'>('selected')
+  const filteredMatches=useMemo(()=>matchFilter==='high'?matchPeople.filter(person=>person.score>=80):matchFilter==='school'&&profile?matchPeople.filter(person=>person.school===profile.school):matchPeople,[matchPeople,matchFilter,profile])
+  return <motion.div className="page" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><div className="filter-bar"><div><button className={`filter ${matchFilter==='selected'?'active':''}`} onClick={()=>setMatchFilter('selected')}>为你精选</button><button className={`filter ${matchFilter==='high'?'active':''}`} onClick={()=>setMatchFilter('high')}>高契合度</button><button className={`filter ${matchFilter==='school'?'active':''}`} onClick={()=>setMatchFilter('school')}>同校用户</button></div><button className="secondary" onClick={()=>go('preferences')}><SlidersHorizontal size={17} />筛选偏好</button></div><div className="match-insight glass-card"><div className="insight-icon"><Sparkles /></div><div><b>{session?'匹配雷达已更新':'匹配功能预览'}</b><p>{session?`当前找到 ${matchPeople.length} 位候选人，可继续调整关系期待`:'登录并完善画像后，将根据真实资料生成推荐'}</p></div><button onClick={() => setShowOnboarding(true)}>查看我的画像 <ChevronRight size={16} /></button></div>{matchesLoading ? <div className="match-skeleton-grid">{[1,2,3].map(x => <div className="match-skeleton" key={x}><i /><b /><span /></div>)}</div> : filteredMatches.length?<div className="match-grid full">{filteredMatches.map(p => <MatchCard key={p.id} person={p} onOpen={() => setSelectedPerson(p)} onHeart={()=>heartPerson(p)} onInsight={'userId' in p && 'reasons' in p ? () => setInsightPerson(p as unknown as MatchPerson) : undefined} />)}</div>:<div className="match-empty glass-card"><Sparkles/><h3>这一组暂时没有合适的候选人</h3><p>这不代表没有可能。你可以先完善一项资料、做一次自我探索，或稍后回来查看新的真实推荐。</p><div className="empty-next-actions"><button className="primary" onClick={()=>go('preferences')}>调整匹配偏好</button><button className="secondary" onClick={()=>go('exploration')}>做一次自我探索</button><button className="secondary" onClick={()=>go('moments')}>先逛同频动态</button></div></div>}</motion.div>
+}

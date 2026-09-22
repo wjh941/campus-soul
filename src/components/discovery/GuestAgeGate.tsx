@@ -1,0 +1,3 @@
+import { Ban, LockKeyhole, MapPin, ShieldCheck } from 'lucide-react'
+
+export default function GuestAgeGate({onAccept}:{onAccept:()=>void}){return <div className="guest-age-gate" role="dialog" aria-modal="true" aria-labelledby="guest-age-title"><div className="guest-age-card"><ShieldCheck className="guest-age-icon"/><span className="section-kicker">18+ COMMUNITY</span><h2 id="guest-age-title">先确认你已满 18 周岁</h2><p>同频面向成年用户。确认后才能浏览演示人物和社交内容；注册时还会再次进行年龄与协议确认。</p><div className="guest-age-points"><span><LockKeyhole size={15}/>邮箱不会公开展示</span><span><Ban size={15}/>可随时屏蔽和举报</span><span><MapPin size={15}/>不会展示精确位置</span></div><button className="primary" type="button" onClick={onAccept}>我已满 18 周岁，继续浏览</button><small>未满 18 周岁请离开此页面。</small></div></div>}
