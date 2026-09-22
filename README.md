@@ -1,5 +1,36 @@
 # 同频 · 真实社交与深度匹配
 
+## 前端架构
+
+```text
+src/
+  main.tsx                # 入口：鉴权回调拦截 + Service Worker 注册
+  App.tsx                 # 应用壳层：侧边栏/顶栏/路由出口/全局弹层（约 160 行）
+  routes/                 # 每个视图一个路由组件（HashRouter：/#/matches 等）
+  context/                # AppContext（跨视图状态）+ AppProvider（副作用与动作）
+  components/
+    layout/               # Sidebar / Topbar / MobileNav
+    common/               # Avatar / PageLoading
+    discovery/            # MatchCard / ProfileModal / GuestActivation / GuestAgeGate / …
+    moments/              # Composer / PostCard
+    auth/                 # AuthModal / Onboarding / AuthCallback
+    chat|assessment|profile|trust/…  # 其余领域组件（懒加载）
+  hooks/                  # useDialogLifecycle / useOnlineStatus / usePointerRipple
+  lib/                    # supabase / navigation / demo 数据 / 领域 API 封装
+```
+
+- 路由使用 `react-router-dom` 的 `HashRouter`（`?view=` 手写路由已移除），兼容 GitHub Pages 项目站点，无需服务端回退配置。
+- 样式：全局只有 `index.css`（reset/基础）与 `App.css`（按原始级联顺序合并的整合层）；组件自身样式放在同目录的 `*.module.css`（CSS Modules），如 `GuestActivation.module.css`。
+- 测试：Vitest + React Testing Library，覆盖登录/注册流程、匹配列表渲染与筛选、聊天发送与草稿恢复、举报/拉黑入口、发布器草稿与图片校验等。
+
+```bash
+npm run test        # vitest run（组件与单元测试）
+npm run test:watch  # watch 模式
+npm run test:smoke  # 结构冒烟断言（CI 中单独执行）
+npm run lint        # oxlint
+npm run check:css   # CSS 花括号完整性（递归扫描 src/）
+```
+
 ## 从演示模式上线
 
 页面显示“Supabase 尚未配置”或“演示模式”，是因为 Vite 构建时没有读取 `VITE_SUPABASE_URL` 与 `VITE_SUPABASE_ANON_KEY`。它们必须在部署平台的构建环境中配置，不能只配置在本地电脑。
