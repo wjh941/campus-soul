@@ -1,5 +1,7 @@
 # 同频 · 真实社交与深度匹配
 
+[![Deploy GitHub Pages](https://github.com/wjh941/campus-soul/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/wjh941/campus-soul/actions/workflows/deploy-pages.yml) ![Node 22+](https://img.shields.io/badge/node-22%2B-blue)
+
 同频是一个面向成年用户的真实社交与深度匹配 Web 应用：通过引导式资料、深度测评与匹配反馈机制生成真实候选推荐，提供心动配对、私聊、匿名匹配聊天与动态广场，并内置数据导出、注销、举报拉黑等账号与安全能力。前端为 React 单页应用，后端直接使用 Supabase（认证、Postgres、Storage、RLS），无需自建服务端。
 
 ## 架构一览
@@ -79,6 +81,54 @@ Vite 环境变量在构建时写入前端，**只能放 publishable/anon key，�
 | **路由** | 单页应用，`App.tsx` 内以 `history.pushState` + `?view=` 查询参数管理 14 个视图（发现、匹配、动态、匿名、消息、会员、账号、数据、后台等），支持浏览器前进后退 |
 | **数据库** | 36 个 SQL 迁移覆盖表结构、RLS 策略、Storage 策略与 RPC（匹配、匿名会话、举报、数据导出等） |
 | **PWA** | `public/` 下的 manifest、Service Worker 与图标；移动端、平板、桌面有专门适配样式 |
+
+## 内部逻辑
+
+### 目录结构与职责
+
+```text
+campus-soul/
+├── .github/workflows/         # deploy-pages.yml：push main 时跑 test/lint/check:css 并发布 Pages
+├── public/                    # PWA 资源：manifest.webmanifest、sw.js 与应用图标
+├── scripts/                   # smoke-test.mjs 冒烟断言、check-css-braces.mjs CSS 花括号校验
+├── src/
+│   ├── App.tsx                # 根组件：14 个视图切换、?view= 路由与全局状态
+│   ├── main.tsx               # 入口：挂载 React 并统一导入全部样式
+│   ├── components/            # 25 个组件，21 个经 React.lazy 按需加载，其余直接导入
+│   ├── hooks/                 # useDialogLifecycle：对话框生命周期 Hook
+│   ├── lib/                   # 12 个数据封装模块，视图组件访问后端的唯一入口
+│   │   ├── supabase.ts        # 创建客户端并导出 isSupabaseConfigured，决定真实/演示模式
+│   │   ├── database.types.ts  # Database 类型：全部表的 Row/Insert/Update 结构
+│   │   └── 其余 10 个领域模块  # profiles、messaging、anonymous、social、account 等
+│   └── *.css                  # 50 个按迭代叠加的样式文件
+├── supabase/migrations/       # 36 个 SQL 迁移：表、RLS、Storage 策略与 RPC 函数
+└── vercel.json                # SPA 重写与安全响应头
+```
+
+### 模块与数据流
+
+```mermaid
+flowchart LR
+    GO["go 写入 ?view= 与 ?matchId=<br/>popstate 恢复视图"] --> VIEW["14 个视图<br/>components/ 组件"]
+    subgraph lib["src/lib 数据封装层"]
+        DOMAIN["profiles · messaging · anonymous · social<br/>account · commerce 等 12 个领域模块"]
+        TYPES["database.types.ts<br/>Row/Insert/Update 类型"]
+        CLIENT["supabase.ts<br/>isSupabaseConfigured 判定"]
+    end
+    VIEW -->|调用领域函数| DOMAIN
+    DOMAIN --> CLIENT
+    TYPES -.->|泛型约束| CLIENT
+    CLIENT -->|"已配置"| SB["Supabase<br/>Auth + Postgres + Storage<br/>RLS 策略与 RPC 函数"]
+    CLIENT -.->|"未配置环境变量"| DEMO["演示模式<br/>本地种子数据 people / seedPosts"]
+```
+
+### 关键机制
+
+- **`?view=` 视图路由**：`App.tsx` 用 `views` 数组声明 14 个视图，`go()` 把 `?view=`、`?matchId=` 写入 `URL.searchParams` 后调用 `history.pushState`；`popstate` 监听器经 `urlState()` 读回并校验参数，浏览器前进后退可用。
+- **演示模式切换**：`lib/supabase.ts` 以 `isSupabaseConfigured = Boolean(VITE_SUPABASE_URL && VITE_SUPABASE_ANON_KEY)` 决定创建客户端或返回 `null`；`App.tsx` 据此把 `dataMode` 初始化为 `demo`/`unavailable`，未配置时渲染 `people`、`seedPosts` 种子数据并显示「演示模式」角标。
+- **类型即契约**：`createClient<Database>`（`lib/supabase.ts`）让所有 `supabase.from()` 与 `.rpc()` 调用按 `database.types.ts` 的 Row/Insert/Update 结构做编译期检查。
+- **RLS 兜底安全**：36 个迁移含 23 处 `ENABLE ROW LEVEL SECURITY` 与 67 处 SQL 函数定义（`get_intelligent_matches`、`export_my_data` 等），权限判断在数据库端完成，前端只持有 publishable/anon key。
+- **按需加载与统一容错**：21 个组件经 `React.lazy` 分包；`lib/resilience.ts` 的 `withTimeout`、`retry`、`safeStorage`、`friendlyError` 统一处理弱网与本地存储异常。
 
 ## 部署
 
