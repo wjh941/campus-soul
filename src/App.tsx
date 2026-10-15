@@ -36,7 +36,6 @@ import {
   Sun,
   Target,
   Flag,
-  Ban,
   PanelLeftClose,
   PanelLeftOpen,
   ChevronDown,
@@ -57,7 +56,6 @@ import {
 } from './lib/social';
 import { sendHeart } from './lib/messaging';
 import { friendlyError, safeStorage, withTimeout } from './lib/resilience';
-import { useDialogLifecycle } from './hooks/useDialogLifecycle';
 import {
   blockUser,
   disableLocation,
@@ -99,6 +97,7 @@ import PageLoading from './components/Loading';
 import { GuestActivation, GuestAgeGate } from './components/EntryGates';
 import Onboarding from './components/Onboarding';
 import AuthModal from './components/AuthModal';
+import ProfileModal from './components/ProfileModal';
 
 type View =
   | 'home'
@@ -741,143 +740,6 @@ function PostCard({
         )}
       </AnimatePresence>
     </motion.article>
-  );
-}
-
-function ProfileModal({
-  person,
-  onClose,
-  onHeart,
-  onReport,
-  onBlock,
-}: {
-  person: Person;
-  onClose: () => void;
-  onHeart: () => Promise<void>;
-  onReport: () => Promise<void>;
-  onBlock: () => Promise<void>;
-}) {
-  const [sending, setSending] = useState(false);
-  const dialog = useDialogLifecycle<HTMLDivElement>(onClose);
-  return (
-    <motion.div
-      className="modal-backdrop"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <motion.div
-        ref={dialog}
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        aria-label={`${person.name} 的资料`}
-        className="profile-modal"
-        initial={{ scale: 0.92, y: 30 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.94, opacity: 0 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button className="modal-close" aria-label="关闭资料" onClick={onClose}>
-          <X />
-        </button>
-        <div className="modal-cover">
-          <img src={person.avatar} alt="" />
-          <div className="modal-gradient" />
-          <div className="modal-name">
-            {'verified' in person && person.verified && (
-              <span className="verified">
-                <ShieldCheck size={15} />
-                身份已认证
-              </span>
-            )}
-            <h2>
-              {person.name}, {person.age}
-            </h2>
-            <p>
-              <GraduationCap size={16} />
-              {person.school} · {person.major}
-            </p>
-          </div>
-        </div>
-        <div className="modal-body">
-          <div className="match-summary">
-            <div className="big-score">{person.score >= 80 ? '高契合' : '匹配线索'}</div>
-            <div>
-              <h3>
-                {person.score >= 85
-                  ? '你们很有可能同频'
-                  : person.score >= 70
-                    ? '值得进一步了解'
-                    : '一次新的相遇'}
-              </h3>
-              <p>
-                {'analysis' in person ? '基于多维资料与关系偏好计算' : '当前为基础资料契合度预览'}
-              </p>
-            </div>
-          </div>
-          <div className="why-match">
-            <h3>为什么推荐 TA</h3>
-            <div className="reason-grid">
-              {('reasons' in person && person.reasons.length
-                ? person.reasons
-                : ['兴趣方向可能彼此呼应', '关系期待存在共同点']
-              )
-                .slice(0, 4)
-                .map((reason, index) => (
-                  <div key={reason}>
-                    <span>{['🌙', '💬', '🧭', '🎧'][index]}</span>
-                    <b>{reason}</b>
-                    <p>
-                      {'topics' in person && person.topics?.[index]
-                        ? `可以从“${person.topics[index]}”聊起`
-                        : '匹配理由来自双方公开资料与偏好'}
-                    </p>
-                  </div>
-                ))}
-            </div>
-          </div>
-          <div className="profile-safety-actions">
-            <button onClick={() => void onReport()}>
-              <Flag size={14} />
-              举报
-            </button>
-            <button onClick={() => void onBlock()}>
-              <Ban size={14} />
-              屏蔽
-            </button>
-          </div>
-          <div className="modal-actions">
-            <button className="secondary" onClick={onClose}>
-              <X size={18} />
-              暂时略过
-            </button>
-            <button
-              className="primary"
-              disabled={sending}
-              onClick={async () => {
-                setSending(true);
-                try {
-                  await onHeart();
-                } finally {
-                  setSending(false);
-                }
-              }}
-            >
-              {sending ? (
-                <LoaderCircle className="spin" size={18} />
-              ) : (
-                <Heart size={18} fill="currentColor" />
-              )}
-              发送心动
-            </button>
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
   );
 }
 
