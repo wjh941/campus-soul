@@ -3,7 +3,6 @@ import type { Session } from '@supabase/supabase-js';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bell,
-  ChevronRight,
   Compass,
   Heart,
   Home,
@@ -87,11 +86,12 @@ import AuthModal from './components/AuthModal';
 import ProfileModal from './components/ProfileModal';
 import Avatar from './components/Avatar';
 import type { Person } from './components/MatchCard';
-import PostCard, { type Post } from './components/PostCard';
+import type { Post } from './components/PostCard';
 import ProfileView from './views/ProfileView';
 import MatchesView, { type MatchFilter } from './views/MatchesView';
 import MomentsView from './views/MomentsView';
 import HomePicksView from './views/HomePicksView';
+import HomeFeedView from './views/HomeFeedView';
 
 type View =
   | 'home'
@@ -913,6 +913,7 @@ function App() {
   );
   const homePicks: Person[] =
     dataMode === 'demo' ? people.slice(0, 3) : dataMode === 'real' ? matchPeople.slice(0, 3) : [];
+  const homePosts = posts.slice(0, 2);
   const discoveryPeople: MatchPerson[] =
     dataMode === 'real' && nearbyPeople.length
       ? nearbyPeople
@@ -1281,37 +1282,17 @@ function App() {
                 onHeart={heartPerson}
                 onInsight={setInsightPerson}
               />
-              <section className="section-head moment-title">
-                <div>
-                  <span className="section-kicker">CAMPUS MOMENTS</span>
-                  <h2>同频的人，此刻在做什么</h2>
-                </div>
-                <button onClick={() => go('moments')}>
-                  进入广场 <ChevronRight size={17} />
-                </button>
-              </section>
-              <div className="home-feed">
-                {posts.slice(0, 2).map((p) => (
-                  <PostCard
-                    key={p.id}
-                    post={p}
-                    onLike={() => like(p.id)}
-                    onComment={(t) => comment(p.id, t)}
-                    onDelete={
-                      'authorId' in p && p.authorId === session?.user.id
-                        ? () => void removePost(p.id)
-                        : undefined
-                    }
-                    onReport={
-                      'authorId' in p && p.authorId !== session?.user.id
-                        ? () => void flagPost(p.id)
-                        : undefined
-                    }
-                    onNotice={notify}
-                    userAvatar={userAvatar}
-                  />
-                ))}
-              </div>
+              <HomeFeedView
+                session={session}
+                posts={homePosts}
+                onEnterSquare={() => go('moments')}
+                onLike={like}
+                onComment={comment}
+                onRemovePost={removePost}
+                onFlagPost={flagPost}
+                notify={notify}
+                userAvatar={userAvatar}
+              />
             </motion.div>
           )}
           {view === 'matches' && (
