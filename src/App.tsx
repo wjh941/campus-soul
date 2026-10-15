@@ -20,11 +20,9 @@ import {
   Users,
   X,
   Zap,
-  GraduationCap,
   Coffee,
   BookOpen,
   ArrowRight,
-  Bookmark,
   Settings,
   Camera,
   LogIn,
@@ -35,7 +33,6 @@ import {
   Moon,
   Sun,
   Target,
-  Flag,
   PanelLeftClose,
   PanelLeftOpen,
   ChevronDown,
@@ -98,6 +95,9 @@ import { GuestActivation, GuestAgeGate } from './components/EntryGates';
 import Onboarding from './components/Onboarding';
 import AuthModal from './components/AuthModal';
 import ProfileModal from './components/ProfileModal';
+import Avatar from './components/Avatar';
+import MatchCard, { type Person } from './components/MatchCard';
+import PostCard, { type Post } from './components/PostCard';
 
 type View =
   | 'home'
@@ -139,22 +139,6 @@ const urlState = () => {
   };
 };
 const viewFromUrl = () => urlState().view;
-type Comment = { id: string | number; name: string; avatar: string; text: string };
-type Post = {
-  id: string | number;
-  authorId?: string;
-  name: string;
-  avatar: string;
-  school: string;
-  time: string;
-  text: string;
-  image?: string;
-  tags: string[];
-  likes: number;
-  liked: boolean;
-  comments: Comment[];
-};
-
 const people = [
   {
     id: 1,
@@ -322,140 +306,6 @@ const mobileNav = navGroups
   .flatMap((group) => group.items)
   .filter((item) => ['home', 'matches', 'moments', 'messages', 'profile'].includes(item.id));
 
-function Avatar({
-  src,
-  size = 44,
-  online = false,
-}: {
-  src: string;
-  size?: number;
-  online?: boolean;
-}) {
-  const [failed, setFailed] = useState(false);
-  return (
-    <div className="avatar-wrap" style={{ width: size, height: size }}>
-      {failed ? (
-        <span className="avatar-fallback">
-          <User />
-        </span>
-      ) : (
-        <img
-          className="avatar"
-          src={src}
-          alt="头像"
-          loading="lazy"
-          decoding="async"
-          onError={() => setFailed(true)}
-        />
-      )}{' '}
-      {online && <span className="online" />}
-    </div>
-  );
-}
-
-type Person = (typeof people)[0] | MatchPerson;
-function MatchCard({
-  person,
-  onOpen,
-  onInsight,
-  onHeart,
-  demo = false,
-}: {
-  person: Person;
-  onOpen: () => void;
-  onInsight?: () => void;
-  onHeart?: () => Promise<void>;
-  demo?: boolean;
-}) {
-  const [heartBusy, setHeartBusy] = useState(false);
-  return (
-    <motion.article
-      className={`match-card ${demo ? 'demo-match-card' : ''}`}
-      whileHover={{ y: -7 }}
-      transition={{ type: 'spring', stiffness: 260 }}
-      onClick={onOpen}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onOpen();
-        }
-      }}
-      role="button"
-      tabIndex={0}
-      aria-label={`查看${person.name}的资料，${person.score >= 80 ? '高契合' : '匹配线索'}`}
-    >
-      <div className="match-photo">
-        <img src={person.avatar} alt={person.name} />
-        <div className="score-orbit">
-          <b>{person.score >= 80 ? '高契合' : '匹配线索'}</b>
-          <span>仅供认识</span>
-        </div>
-        <button
-          className="floating-heart"
-          disabled={demo || heartBusy}
-          aria-label={demo ? '演示资料，登录后可发送心动' : `向${person.name}发送心动`}
-          onClick={async (e) => {
-            e.stopPropagation();
-            if (!onHeart || heartBusy) return;
-            setHeartBusy(true);
-            try {
-              await onHeart();
-            } finally {
-              setHeartBusy(false);
-            }
-          }}
-        >
-          {heartBusy ? <LoaderCircle className="spin" size={17} /> : <Heart size={19} />}
-        </button>
-      </div>
-      <div className="match-content">
-        <div className="person-title">
-          <h3>
-            {person.name}
-            <span>{person.age}</span>
-          </h3>
-          <span className="distance">
-            <MapPin size={13} />
-            {person.distance}
-          </span>
-        </div>
-        <p className="school-line">
-          <GraduationCap size={15} />
-          {person.school} · {person.major}
-        </p>
-        <p className="quote">“{person.quote}”</p>
-        {onInsight && (
-          <button
-            className="insight-link"
-            onClick={(e) => {
-              e.stopPropagation();
-              onInsight();
-            }}
-          >
-            <Sparkles size={12} />
-            查看匹配分析
-          </button>
-        )}
-        <div className="tag-row">
-          {person.tags.map((t) => (
-            <span key={t}>{t}</span>
-          ))}
-        </div>
-        <div className="mini-bars">
-          {['价值观', '兴趣', '生活节奏'].map((x, i) => (
-            <div key={x}>
-              <span>{x}</span>
-              <i>
-                <b style={{ width: `${person.dimensions[i]}%`, background: person.color }} />
-              </i>
-            </div>
-          ))}
-        </div>
-      </div>
-    </motion.article>
-  );
-}
-
 function Composer({
   onPost,
   authenticated,
@@ -588,158 +438,6 @@ function Composer({
         </small>
       )}
     </section>
-  );
-}
-
-function PostCard({
-  post,
-  onLike,
-  onComment,
-  onDelete,
-  onReport,
-  onNotice,
-  userAvatar,
-}: {
-  post: Post;
-  onLike: () => void;
-  onComment: (text: string) => Promise<void> | void;
-  onDelete?: () => void;
-  onReport?: () => void;
-  onNotice?: (text: string) => void;
-  userAvatar: string;
-}) {
-  const [comment, setComment] = useState('');
-  const [open, setOpen] = useState(post.comments.length > 0);
-  const [saved, setSaved] = useState(false);
-  const [commenting, setCommenting] = useState(false);
-  const sendComment = async () => {
-    const value = comment.trim();
-    if (!value || commenting) return;
-    setCommenting(true);
-    try {
-      await onComment(value);
-      setComment('');
-    } catch {
-      onNotice?.('评论发送失败，内容已保留');
-    } finally {
-      setCommenting(false);
-    }
-  };
-  const share = async () => {
-    const text = `${post.name}：${post.text}`;
-    try {
-      if (navigator.share) await navigator.share({ title: '同频动态', text, url: location.href });
-      else {
-        await navigator.clipboard.writeText(text);
-        onNotice?.('动态内容已复制');
-      }
-    } catch (error) {
-      if (error instanceof Error && error.name !== 'AbortError') onNotice?.('分享失败，请稍后重试');
-    }
-  };
-  return (
-    <motion.article
-      layout
-      className="post-card glass-card"
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-    >
-      <header>
-        <Avatar src={post.avatar} size={45} online />
-        <div>
-          <strong>{post.name}</strong>
-          <span>
-            {post.school} · {post.time}
-          </span>
-        </div>
-        {onDelete ? (
-          <button className="delete-post" onClick={onDelete}>
-            删除
-          </button>
-        ) : onReport ? (
-          <button className="report-post" onClick={onReport}>
-            <Flag size={14} />
-            举报
-          </button>
-        ) : null}
-      </header>
-      <p className="post-text">{post.text}</p>
-      <div className="tag-row">
-        {post.tags.map((t) => (
-          <span key={t}>#{t}</span>
-        ))}
-      </div>
-      {post.image && <img className="post-image" src={post.image} alt="动态配图" />}
-      <div className="post-actions">
-        <button
-          aria-pressed={post.liked}
-          aria-label={post.liked ? '取消点赞' : '点赞'}
-          onClick={onLike}
-          className={post.liked ? 'liked' : ''}
-        >
-          <Heart size={19} fill={post.liked ? 'currentColor' : 'none'} />
-          {post.likes}
-        </button>
-        <button aria-expanded={open} onClick={() => setOpen(!open)}>
-          <MessageCircle size={19} />
-          {post.comments.length}
-        </button>
-        <button onClick={() => void share()}>
-          <Send size={18} />
-          分享
-        </button>
-        <button
-          className={`save ${saved ? 'liked' : ''}`}
-          aria-pressed={saved}
-          aria-label={saved ? '取消临时收藏' : '临时收藏'}
-          onClick={() => {
-            setSaved((x) => !x);
-            onNotice?.(saved ? '已取消收藏' : '已暂存在本设备');
-          }}
-        >
-          <Bookmark size={18} fill={saved ? 'currentColor' : 'none'} />
-        </button>
-      </div>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            className="comments"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-          >
-            {post.comments.map((c) => (
-              <div className="comment" key={c.id}>
-                <Avatar src={c.avatar} size={29} />
-                <p>
-                  <strong>{c.name}</strong>
-                  {c.text}
-                </p>
-              </div>
-            ))}
-            <div className="comment-input">
-              <Avatar src={userAvatar} size={29} />
-              <input
-                disabled={commenting}
-                maxLength={500}
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-                    e.preventDefault();
-                    void sendComment();
-                  }
-                }}
-                placeholder="友善地说点什么…"
-              />
-              <button disabled={!comment.trim() || commenting} onClick={() => void sendComment()}>
-                {commenting ? <LoaderCircle className="spin" size={16} /> : <Send size={16} />}
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.article>
   );
 }
 
