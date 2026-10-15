@@ -13,7 +13,6 @@ import {
   Search,
   Send,
   ShieldCheck,
-  SlidersHorizontal,
   Sparkles,
   User,
   Users,
@@ -97,6 +96,7 @@ import Avatar from './components/Avatar';
 import MatchCard, { type Person } from './components/MatchCard';
 import PostCard, { type Post } from './components/PostCard';
 import ProfileView from './views/ProfileView';
+import MatchesView, { type MatchFilter } from './views/MatchesView';
 
 type View =
   | 'home'
@@ -449,7 +449,7 @@ function App() {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [matchPeople, setMatchPeople] = useState<Person[]>(isSupabaseConfigured ? [] : people);
   const [matchesLoading, setMatchesLoading] = useState(false);
-  const [matchFilter, setMatchFilter] = useState<'selected' | 'high' | 'school'>('selected');
+  const [matchFilter, setMatchFilter] = useState<MatchFilter>('selected');
   const [profileBundle, setProfileBundle] = useState<ProfileBundle>();
   const [showProfileEditor, setShowProfileEditor] = useState(false);
   const [showLegal, setShowLegal] = useState(false);
@@ -1493,94 +1493,19 @@ function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
             >
-              <div className="filter-bar">
-                <div>
-                  <button
-                    className={`filter ${matchFilter === 'selected' ? 'active' : ''}`}
-                    onClick={() => setMatchFilter('selected')}
-                  >
-                    为你精选
-                  </button>
-                  <button
-                    className={`filter ${matchFilter === 'high' ? 'active' : ''}`}
-                    onClick={() => setMatchFilter('high')}
-                  >
-                    高契合度
-                  </button>
-                  <button
-                    className={`filter ${matchFilter === 'school' ? 'active' : ''}`}
-                    onClick={() => setMatchFilter('school')}
-                  >
-                    同校用户
-                  </button>
-                </div>
-                <button className="secondary" onClick={() => go('preferences')}>
-                  <SlidersHorizontal size={17} />
-                  筛选偏好
-                </button>
-              </div>
-              <div className="match-insight glass-card">
-                <div className="insight-icon">
-                  <Sparkles />
-                </div>
-                <div>
-                  <b>{session ? '匹配雷达已更新' : '匹配功能预览'}</b>
-                  <p>
-                    {session
-                      ? `当前找到 ${matchPeople.length} 位候选人，可继续调整关系期待`
-                      : '登录并完善画像后，将根据真实资料生成推荐'}
-                  </p>
-                </div>
-                <button onClick={() => setShowOnboarding(true)}>
-                  查看我的画像 <ChevronRight size={16} />
-                </button>
-              </div>
-              {matchesLoading ? (
-                <div className="match-skeleton-grid">
-                  {[1, 2, 3].map((x) => (
-                    <div className="match-skeleton" key={x}>
-                      <i />
-                      <b />
-                      <span />
-                    </div>
-                  ))}
-                </div>
-              ) : filteredMatches.length ? (
-                <div className="match-grid full">
-                  {filteredMatches.map((p) => (
-                    <MatchCard
-                      key={p.id}
-                      person={p}
-                      onOpen={() => setSelectedPerson(p)}
-                      onHeart={() => heartPerson(p)}
-                      onInsight={
-                        'userId' in p && 'reasons' in p
-                          ? () => setInsightPerson(p as unknown as MatchPerson)
-                          : undefined
-                      }
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="match-empty glass-card">
-                  <Sparkles />
-                  <h3>这一组暂时没有合适的候选人</h3>
-                  <p>
-                    这不代表没有可能。你可以先完善一项资料、做一次自我探索，或稍后回来查看新的真实推荐。
-                  </p>
-                  <div className="empty-next-actions">
-                    <button className="primary" onClick={() => go('preferences')}>
-                      调整匹配偏好
-                    </button>
-                    <button className="secondary" onClick={() => go('exploration')}>
-                      做一次自我探索
-                    </button>
-                    <button className="secondary" onClick={() => go('moments')}>
-                      先逛同频动态
-                    </button>
-                  </div>
-                </div>
-              )}
+              <MatchesView
+                session={session}
+                candidates={filteredMatches}
+                total={matchPeople.length}
+                loading={matchesLoading}
+                filter={matchFilter}
+                onFilter={setMatchFilter}
+                onGo={go}
+                onOpenOnboarding={() => setShowOnboarding(true)}
+                onOpenPerson={setSelectedPerson}
+                onHeart={heartPerson}
+                onInsight={setInsightPerson}
+              />
             </motion.div>
           )}
           {view === 'exploration' && (
