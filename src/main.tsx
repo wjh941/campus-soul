@@ -1,64 +1,88 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import './premium.css'
-import './interactions.css'
-import './health.css'
-import './executive.css'
-import './click-polish.css'
-import './commerce.css'
-import './form-polish.css'
-import './desktop-polish.css'
-import './sidebar-polish.css'
-import './advanced-motion.css'
-import './compatibility.css'
-import './sidebar-visual.css'
-import './retention.css'
-import './chat-polish.css'
-import './assessment-polish.css'
-import './exploration.css'
-import './web-upgrade.css'
-import './deep-assessment.css'
-import './expectation.css'
-import './trend-panel.css'
-import './choice-compass.css'
-import './mobile-hardening.css'
-import './chat-draft.css'
-import './performance.css'
-import './attachment-fix.css'
-import './nearby-discovery-fix.css'
-import './nearby-distance-fix.css'
-import './iteration-polish.css'
-import './next-iteration.css'
-import './ux-upgrade.css'
-import './ios-compatibility.css'
-import './cross-platform.css'
-import './launch-readiness.css'
-import './upload-hardening.css'
-import './precision-polish.css'
-import './guest-activation.css'
-import './trust-and-empty.css'
-import './narrow-mobile-fix.css'
-import './auth-status.css'
-import './tablet-topbar-fix.css'
-import './guest-focus.css'
-import './guest-age-gate.css'
-import './stability.css'
-import './experience-upgrade.css'
-import './final-polish.css'
-import './three-round-upgrade.css'
-import './nearby-quick-actions.css'
-import './moments-compose.css'
-import App from './App.tsx'
-import AppErrorBoundary from './components/AppErrorBoundary.tsx'
-import AuthCallback from './components/AuthCallback.tsx'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import './index.css';
+import './premium.css';
+import './interactions.css';
+import './health.css';
+import './executive.css';
+import './click-polish.css';
+import './commerce.css';
+import './form-polish.css';
+import './desktop-polish.css';
+import './sidebar-polish.css';
+import './advanced-motion.css';
+import './compatibility.css';
+import './sidebar-visual.css';
+import './retention.css';
+import './chat-polish.css';
+import './assessment-polish.css';
+import './exploration.css';
+import './web-upgrade.css';
+import './deep-assessment.css';
+import './expectation.css';
+import './trend-panel.css';
+import './choice-compass.css';
+import './mobile-hardening.css';
+import './chat-draft.css';
+import './performance.css';
+import './attachment-fix.css';
+import './nearby-discovery-fix.css';
+import './nearby-distance-fix.css';
+import './iteration-polish.css';
+import './next-iteration.css';
+import './ux-upgrade.css';
+import './ios-compatibility.css';
+import './cross-platform.css';
+import './launch-readiness.css';
+import './upload-hardening.css';
+import './precision-polish.css';
+import './guest-activation.css';
+import './trust-and-empty.css';
+import './narrow-mobile-fix.css';
+import './auth-status.css';
+import './tablet-topbar-fix.css';
+import './guest-focus.css';
+import './guest-age-gate.css';
+import './stability.css';
+import './experience-upgrade.css';
+import './final-polish.css';
+import './three-round-upgrade.css';
+import './nearby-quick-actions.css';
+import './moments-compose.css';
+import App from './App.tsx';
+import AppErrorBoundary from './components/AppErrorBoundary.tsx';
+import AuthCallback from './components/AuthCallback.tsx';
 
-if ('serviceWorker' in navigator && import.meta.env.PROD) window.addEventListener('load',()=>navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).then(registration=>registration.update().catch(()=>undefined)).catch(error=>console.warn('Service worker registration failed',error)))
-window.addEventListener('error',event=>{if(event.target instanceof HTMLScriptElement||event.target instanceof HTMLLinkElement)document.documentElement.classList.add('boot-failed')},{capture:true})
-window.addEventListener('unhandledrejection',event=>{console.warn('Unhandled async error',event.reason)})
+if ('serviceWorker' in navigator && import.meta.env.PROD)
+  window.addEventListener('load', () =>
+    navigator.serviceWorker
+      .register(`${import.meta.env.BASE_URL}sw.js`)
+      .then((registration) => registration.update().catch(() => undefined))
+      .catch((error) => console.warn('Service worker registration failed', error)),
+  );
+window.addEventListener(
+  'error',
+  (event) => {
+    if (event.target instanceof HTMLScriptElement || event.target instanceof HTMLLinkElement)
+      document.documentElement.classList.add('boot-failed');
+  },
+  { capture: true },
+);
+window.addEventListener('unhandledrejection', (event) => {
+  console.warn('Unhandled async error', event.reason);
+});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AppErrorBoundary>{new URLSearchParams(location.search).has('code')||new URLSearchParams(location.search).has('token_hash')||location.hash.includes('access_token=')||location.hash.includes('error_description=')?<AuthCallback/>:<App/>}</AppErrorBoundary>
+    <AppErrorBoundary>
+      {new URLSearchParams(location.search).has('code') ||
+      new URLSearchParams(location.search).has('token_hash') ||
+      location.hash.includes('access_token=') ||
+      location.hash.includes('error_description=') ? (
+        <AuthCallback />
+      ) : (
+        <App />
+      )}
+    </AppErrorBoundary>
   </StrictMode>,
-)
+);

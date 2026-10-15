@@ -1,19 +1,393 @@
-import { useState } from 'react'
-import { ArrowLeft, ArrowRight, Eye, PawPrint, RotateCcw, Sparkles, Trash2, History } from 'lucide-react'
-import { safeStorage } from '../lib/resilience'
-import PreferenceTrends from './PreferenceTrends'
-import { saveExplorationResult } from '../lib/reflections'
+import { useState } from 'react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Eye,
+  PawPrint,
+  RotateCcw,
+  Sparkles,
+  Trash2,
+  History,
+} from 'lucide-react';
+import { safeStorage } from '../lib/resilience';
+import PreferenceTrends from './PreferenceTrends';
+import { saveExplorationResult } from '../lib/reflections';
 
-type Test={id:string;title:string;subtitle:string;icon:typeof PawPrint;questions:{prompt:string;options:{label:string;type:string}[]}[];results:Record<string,{title:string;summary:string;advice:string}>}
-const tests:Test[]=[
- {id:'animal',title:'动物塑｜你的亲密本能',subtitle:'用 5 个情境问题，观察你在关系里靠近、信任与表达的自然方式。',icon:PawPrint,questions:[
-  {prompt:'刚认识一个让你有好感的人，你更可能？',options:[{label:'先观察，确认舒服再靠近',type:'cat'},{label:'主动分享，快速建立熟悉感',type:'dog'},{label:'感受到氛围后自然靠近',type:'deer'},{label:'用玩笑和好奇试探默契',type:'fox'}]},
-  {prompt:'对方突然变得忙碌，你第一反应是？',options:[{label:'给空间，等对方准备好',type:'cat'},{label:'直接问问发生了什么',type:'dog'},{label:'容易察觉情绪变化',type:'deer'},{label:'先转移注意力，保持轻松',type:'fox'}]},
-  {prompt:'表达在乎时，你更习惯？',options:[{label:'记住细节，用行动照顾',type:'cat'},{label:'及时回应，把喜欢说出来',type:'dog'},{label:'用温柔的陪伴传递安全感',type:'deer'},{label:'创造新鲜体验和共同回忆',type:'fox'}]},
-  {prompt:'关系出现分歧时，你需要？',options:[{label:'一点独处时间理清感受',type:'cat'},{label:'尽快把话说开，不留猜测',type:'dog'},{label:'先确认彼此没有受伤',type:'deer'},{label:'换个角度，让对话重新流动',type:'fox'}]},
-  {prompt:'你最向往的亲密感是？',options:[{label:'被尊重节奏，也被默默惦记',type:'cat'},{label:'热烈回应，坚定地选择彼此',type:'dog'},{label:'敏感被理解，脆弱可以被接住',type:'deer'},{label:'保持好奇，一起探索不设限',type:'fox'}]}],results:{cat:{title:'猫系探索者',summary:'你重视节奏、边界与细节。信任通常不是一瞬间发生，而是在被尊重的相处里慢慢长出来。',advice:'可以尝试把“我需要一点空间”说出来，让安静也成为可被理解的表达。'},dog:{title:'犬系连接者',summary:'你倾向用直接、热烈的回应建立连接，稳定的互动会让你感受到被重视。',advice:'热情之外，也给彼此留出自然调整的空间，关系会更有呼吸感。'},deer:{title:'鹿系感受者',summary:'你对氛围和情绪很敏锐，重视温柔、确定感与被认真对待的体验。',advice:'照顾他人之前，先确认自己的感受和边界同样重要。'},fox:{title:'狐狸系探索者',summary:'你被好奇、新鲜感和灵活的默契吸引，喜欢不被定义但真诚有趣的连接。',advice:'把对未来的期待落到一两个具体约定，新鲜感也能拥有安全感。'}}},
- {id:'desire',title:'心动雷达｜你真正期待什么',subtitle:'把模糊的“想恋爱”，拆成更清晰的关系愿望。',icon:Eye,questions:['当你感到疲惫时，你最希望对方？','让你确认一段关系值得继续的是？','你希望在关系里保留什么？','最让你感到被爱的一刻是？','理想的相处更接近？'].map(prompt=>({prompt,options:['被坚定地选择','有人陪我探索生活','稳定而及时的回应','被尊重，也能做自己'].map((label,i)=>({label,type:String(i)}))})),results:{'0':{title:'坚定确认型',summary:'你期待清晰、稳定且不含糊的回应，确认感会帮助你安心投入。',advice:'把“我需要怎样的回应”表达成具体行为，比等待对方猜更有效。'},'1':{title:'共同探索型',summary:'你被共同成长和新鲜体验吸引，希望关系既有温度也有生命力。',advice:'在追求新鲜的同时，为重要关系留下一些稳定的仪式。'},'2':{title:'稳定回应型',summary:'你重视持续的联系和可预期的在场感，细水长流对你很有力量。',advice:'稳定不等于频繁，找到双方都舒服的节奏才是关键。'},'3':{title:'自由真实型',summary:'你希望亲密不以牺牲自我为代价，边界和独立是关系的呼吸。',advice:'清晰表达边界，不会削弱亲密，反而让靠近更自愿。'}}}
-]
-type HistoryItem={id:string;title:string;result:string;date:string}
-const historyKey='tongpin-exploration-history'
-export default function SelfExploration({onResult,onOpenMatches,userId}:{onResult?:(result:{title:string;summary:string;advice:string})=>void;onOpenMatches?:()=>void;userId?:string}={}){const[selected,setSelected]=useState<string|null>(null),[step,setStep]=useState(0),[answers,setAnswers]=useState<string[]>([]),[result,setResult]=useState<{title:string;summary:string;advice:string}|null>(null),[history,setHistory]=useState<HistoryItem[]>(()=>{try{return JSON.parse(safeStorage.get(historyKey)||'[]') as HistoryItem[]}catch{return []}});const test=tests.find(x=>x.id===selected);const historyCount=(id:string)=>history.filter(item=>item.id===id).length,lastResult=(id:string)=>history.find(item=>item.id===id)?.result??safeStorage.get(`tongpin-explore-${id}`)??'';const choose=(type:string)=>{const next=[...answers,type];setAnswers(next);if(test&&next.length===test.questions.length){const count=next.reduce<Record<string,number>>((a,x)=>(a[x]=(a[x]??0)+1,a),{});const winner=Object.entries(count).sort((a,b)=>b[1]-a[1])[0][0];const value=test.results[winner];setResult(value);const trend=JSON.parse(safeStorage.get('tongpin-exploration-trend')||'{"counts":{},"total":0}') as {counts:Record<string,number>;total:number};trend.counts[value.title]=(trend.counts[value.title]??0)+1;trend.total+=1;safeStorage.set('tongpin-exploration-trend',JSON.stringify(trend));onResult?.(value);if(userId)void saveExplorationResult(test.id,value.title).catch(()=>undefined);safeStorage.set(`tongpin-explore-${test.id}`,value.title);const item={id:test.id,title:test.title,result:value.title,date:new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})};setHistory(current=>{const next=[item,...current].slice(0,20);safeStorage.set(historyKey,JSON.stringify(next));return next})}else setStep(step+1)};const reset=()=>{setStep(0);setAnswers([]);setResult(null)};const clearAll=()=>{if(window.confirm('确定清空所有测试选项和历史结果吗？此操作无法撤销。')){tests.forEach(item=>safeStorage.remove(`tongpin-explore-${item.id}`));safeStorage.remove(historyKey);setHistory([]);setSelected(null);reset()}};return <main className="explore-page"><PreferenceTrends/><header className="explore-hero"><span className="section-kicker"><Sparkles/>SELF EXPLORATION STUDIO</span><h1>把自己，当作一场值得探索的旅程。</h1><p>独立完成不同主题的小测试，获得关于内心性格、关系期待和亲密本能的辅助线索。</p><small>非心理诊断 · 结果会随经历变化 · 仅供自我理解</small><div className="explore-actions"><button type="button" onClick={()=>{setSelected('history');reset()}}><History/>历史结果 {history.length>0&&<b>{history.length}</b>}</button><button type="button" onClick={clearAll}><Trash2/>清空所有选项</button></div></header>{selected==='history'?<section className="explore-history"><button className="text-back" onClick={()=>setSelected(null)}><ArrowLeft/>返回测试中心</button><div className="history-head"><History/><h2>我的探索足迹</h2><p>每一次结果都只是当下的你，值得被温柔地记录。</p></div>{history.length===0?<div className="history-empty"><Sparkles/><b>还没有测试记录</b><span>完成一次独立探索，结果会出现在这里。</span></div>:<div className="history-list">{history.map((item,index)=><article key={`${item.id}-${item.date}-${index}`}><span>{item.title}</span><b>{item.result}</b><small>{item.date}</small><button type="button" aria-label={`删除${item.title}的这条记录`} onClick={()=>{const next=history.filter((_,i)=>i!==index);setHistory(next);safeStorage.set(historyKey,JSON.stringify(next));if(!next.some(record=>record.id===item.id))safeStorage.remove(`tongpin-explore-${item.id}`)}}><Trash2/></button></article>)}</div>}<button className="history-clear" onClick={clearAll}><Trash2/>清空所有记录</button></section>:!test?<section className="explore-grid">{tests.map(item=><button type="button" className="explore-card" key={item.id} onClick={()=>{setSelected(item.id);reset()}}><item.icon/><span>独立探索 · {historyCount(item.id)} 次记录</span><h2>{item.title}</h2><p>{item.subtitle}</p><strong>开始测试 <ArrowRight/></strong>{lastResult(item.id)&&<em>上次结果：{lastResult(item.id)}</em>}</button>)}</section>:result?<section className="explore-result"><button className="text-back" onClick={()=>{setSelected(null);reset()}}><ArrowLeft/>返回测试中心</button><div className="result-symbol"><test.icon/></div><span className="section-kicker">YOUR EXPLORATION NOTE</span><h2>{result.title}</h2><p>{result.summary}</p><article><b>给此刻的你</b><span>{result.advice}</span></article><small>这是一份辅助材料，不是固定标签。你可以把有共鸣的部分带回真实生活继续观察。</small><div className="explore-result-actions"><button className="primary" type="button" onClick={()=>onOpenMatches?.()}><Sparkles/>查看匹配方向</button><button className="secondary" type="button" onClick={reset}><RotateCcw/>再测一次</button></div><p className="explore-result-note">登录并完善资料后，才能生成基于真实用户的匹配与推荐理由；当前不会把示例资料当作真实互动。</p></section>:<section className="explore-quiz"><button className="text-back" onClick={()=>{setSelected(null);reset()}}><ArrowLeft/>返回测试中心</button><div className="quiz-head"><span>{test.icon&&<test.icon/>}<b>{test.title}</b><small>{step+1} / {test.questions.length}</small></span><i><em style={{width:`${(step/test.questions.length)*100}%`}}/></i><h2>{test.questions[step].prompt}</h2><p>没有标准答案，选择第一时间更有共鸣的选项。</p></div><div className="quiz-options">{test.questions[step].options.map(option=><button type="button" key={option.label} onClick={()=>choose(option.type)}><span>{option.label}</span><ArrowRight/></button>)}</div></section>}</main>}
+type Test = {
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: typeof PawPrint;
+  questions: { prompt: string; options: { label: string; type: string }[] }[];
+  results: Record<string, { title: string; summary: string; advice: string }>;
+};
+const tests: Test[] = [
+  {
+    id: 'animal',
+    title: '动物塑｜你的亲密本能',
+    subtitle: '用 5 个情境问题，观察你在关系里靠近、信任与表达的自然方式。',
+    icon: PawPrint,
+    questions: [
+      {
+        prompt: '刚认识一个让你有好感的人，你更可能？',
+        options: [
+          { label: '先观察，确认舒服再靠近', type: 'cat' },
+          { label: '主动分享，快速建立熟悉感', type: 'dog' },
+          { label: '感受到氛围后自然靠近', type: 'deer' },
+          { label: '用玩笑和好奇试探默契', type: 'fox' },
+        ],
+      },
+      {
+        prompt: '对方突然变得忙碌，你第一反应是？',
+        options: [
+          { label: '给空间，等对方准备好', type: 'cat' },
+          { label: '直接问问发生了什么', type: 'dog' },
+          { label: '容易察觉情绪变化', type: 'deer' },
+          { label: '先转移注意力，保持轻松', type: 'fox' },
+        ],
+      },
+      {
+        prompt: '表达在乎时，你更习惯？',
+        options: [
+          { label: '记住细节，用行动照顾', type: 'cat' },
+          { label: '及时回应，把喜欢说出来', type: 'dog' },
+          { label: '用温柔的陪伴传递安全感', type: 'deer' },
+          { label: '创造新鲜体验和共同回忆', type: 'fox' },
+        ],
+      },
+      {
+        prompt: '关系出现分歧时，你需要？',
+        options: [
+          { label: '一点独处时间理清感受', type: 'cat' },
+          { label: '尽快把话说开，不留猜测', type: 'dog' },
+          { label: '先确认彼此没有受伤', type: 'deer' },
+          { label: '换个角度，让对话重新流动', type: 'fox' },
+        ],
+      },
+      {
+        prompt: '你最向往的亲密感是？',
+        options: [
+          { label: '被尊重节奏，也被默默惦记', type: 'cat' },
+          { label: '热烈回应，坚定地选择彼此', type: 'dog' },
+          { label: '敏感被理解，脆弱可以被接住', type: 'deer' },
+          { label: '保持好奇，一起探索不设限', type: 'fox' },
+        ],
+      },
+    ],
+    results: {
+      cat: {
+        title: '猫系探索者',
+        summary: '你重视节奏、边界与细节。信任通常不是一瞬间发生，而是在被尊重的相处里慢慢长出来。',
+        advice: '可以尝试把“我需要一点空间”说出来，让安静也成为可被理解的表达。',
+      },
+      dog: {
+        title: '犬系连接者',
+        summary: '你倾向用直接、热烈的回应建立连接，稳定的互动会让你感受到被重视。',
+        advice: '热情之外，也给彼此留出自然调整的空间，关系会更有呼吸感。',
+      },
+      deer: {
+        title: '鹿系感受者',
+        summary: '你对氛围和情绪很敏锐，重视温柔、确定感与被认真对待的体验。',
+        advice: '照顾他人之前，先确认自己的感受和边界同样重要。',
+      },
+      fox: {
+        title: '狐狸系探索者',
+        summary: '你被好奇、新鲜感和灵活的默契吸引，喜欢不被定义但真诚有趣的连接。',
+        advice: '把对未来的期待落到一两个具体约定，新鲜感也能拥有安全感。',
+      },
+    },
+  },
+  {
+    id: 'desire',
+    title: '心动雷达｜你真正期待什么',
+    subtitle: '把模糊的“想恋爱”，拆成更清晰的关系愿望。',
+    icon: Eye,
+    questions: [
+      '当你感到疲惫时，你最希望对方？',
+      '让你确认一段关系值得继续的是？',
+      '你希望在关系里保留什么？',
+      '最让你感到被爱的一刻是？',
+      '理想的相处更接近？',
+    ].map((prompt) => ({
+      prompt,
+      options: ['被坚定地选择', '有人陪我探索生活', '稳定而及时的回应', '被尊重，也能做自己'].map(
+        (label, i) => ({ label, type: String(i) }),
+      ),
+    })),
+    results: {
+      '0': {
+        title: '坚定确认型',
+        summary: '你期待清晰、稳定且不含糊的回应，确认感会帮助你安心投入。',
+        advice: '把“我需要怎样的回应”表达成具体行为，比等待对方猜更有效。',
+      },
+      '1': {
+        title: '共同探索型',
+        summary: '你被共同成长和新鲜体验吸引，希望关系既有温度也有生命力。',
+        advice: '在追求新鲜的同时，为重要关系留下一些稳定的仪式。',
+      },
+      '2': {
+        title: '稳定回应型',
+        summary: '你重视持续的联系和可预期的在场感，细水长流对你很有力量。',
+        advice: '稳定不等于频繁，找到双方都舒服的节奏才是关键。',
+      },
+      '3': {
+        title: '自由真实型',
+        summary: '你希望亲密不以牺牲自我为代价，边界和独立是关系的呼吸。',
+        advice: '清晰表达边界，不会削弱亲密，反而让靠近更自愿。',
+      },
+    },
+  },
+];
+type HistoryItem = { id: string; title: string; result: string; date: string };
+const historyKey = 'tongpin-exploration-history';
+export default function SelfExploration({
+  onResult,
+  onOpenMatches,
+  userId,
+}: {
+  onResult?: (result: { title: string; summary: string; advice: string }) => void;
+  onOpenMatches?: () => void;
+  userId?: string;
+} = {}) {
+  const [selected, setSelected] = useState<string | null>(null),
+    [step, setStep] = useState(0),
+    [answers, setAnswers] = useState<string[]>([]),
+    [result, setResult] = useState<{ title: string; summary: string; advice: string } | null>(null),
+    [history, setHistory] = useState<HistoryItem[]>(() => {
+      try {
+        return JSON.parse(safeStorage.get(historyKey) || '[]') as HistoryItem[];
+      } catch {
+        return [];
+      }
+    });
+  const test = tests.find((x) => x.id === selected);
+  const historyCount = (id: string) => history.filter((item) => item.id === id).length,
+    lastResult = (id: string) =>
+      history.find((item) => item.id === id)?.result ??
+      safeStorage.get(`tongpin-explore-${id}`) ??
+      '';
+  const choose = (type: string) => {
+    const next = [...answers, type];
+    setAnswers(next);
+    if (test && next.length === test.questions.length) {
+      const count = next.reduce<Record<string, number>>(
+        (a, x) => ((a[x] = (a[x] ?? 0) + 1), a),
+        {},
+      );
+      const winner = Object.entries(count).sort((a, b) => b[1] - a[1])[0][0];
+      const value = test.results[winner];
+      setResult(value);
+      const trend = JSON.parse(
+        safeStorage.get('tongpin-exploration-trend') || '{"counts":{},"total":0}',
+      ) as { counts: Record<string, number>; total: number };
+      trend.counts[value.title] = (trend.counts[value.title] ?? 0) + 1;
+      trend.total += 1;
+      safeStorage.set('tongpin-exploration-trend', JSON.stringify(trend));
+      onResult?.(value);
+      if (userId) void saveExplorationResult(test.id, value.title).catch(() => undefined);
+      safeStorage.set(`tongpin-explore-${test.id}`, value.title);
+      const item = {
+        id: test.id,
+        title: test.title,
+        result: value.title,
+        date: new Date().toLocaleString('zh-CN', {
+          month: 'numeric',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      };
+      setHistory((current) => {
+        const next = [item, ...current].slice(0, 20);
+        safeStorage.set(historyKey, JSON.stringify(next));
+        return next;
+      });
+    } else setStep(step + 1);
+  };
+  const reset = () => {
+    setStep(0);
+    setAnswers([]);
+    setResult(null);
+  };
+  const clearAll = () => {
+    if (window.confirm('确定清空所有测试选项和历史结果吗？此操作无法撤销。')) {
+      tests.forEach((item) => safeStorage.remove(`tongpin-explore-${item.id}`));
+      safeStorage.remove(historyKey);
+      setHistory([]);
+      setSelected(null);
+      reset();
+    }
+  };
+  return (
+    <main className="explore-page">
+      <PreferenceTrends />
+      <header className="explore-hero">
+        <span className="section-kicker">
+          <Sparkles />
+          SELF EXPLORATION STUDIO
+        </span>
+        <h1>把自己，当作一场值得探索的旅程。</h1>
+        <p>独立完成不同主题的小测试，获得关于内心性格、关系期待和亲密本能的辅助线索。</p>
+        <small>非心理诊断 · 结果会随经历变化 · 仅供自我理解</small>
+        <div className="explore-actions">
+          <button
+            type="button"
+            onClick={() => {
+              setSelected('history');
+              reset();
+            }}
+          >
+            <History />
+            历史结果 {history.length > 0 && <b>{history.length}</b>}
+          </button>
+          <button type="button" onClick={clearAll}>
+            <Trash2 />
+            清空所有选项
+          </button>
+        </div>
+      </header>
+      {selected === 'history' ? (
+        <section className="explore-history">
+          <button className="text-back" onClick={() => setSelected(null)}>
+            <ArrowLeft />
+            返回测试中心
+          </button>
+          <div className="history-head">
+            <History />
+            <h2>我的探索足迹</h2>
+            <p>每一次结果都只是当下的你，值得被温柔地记录。</p>
+          </div>
+          {history.length === 0 ? (
+            <div className="history-empty">
+              <Sparkles />
+              <b>还没有测试记录</b>
+              <span>完成一次独立探索，结果会出现在这里。</span>
+            </div>
+          ) : (
+            <div className="history-list">
+              {history.map((item, index) => (
+                <article key={`${item.id}-${item.date}-${index}`}>
+                  <span>{item.title}</span>
+                  <b>{item.result}</b>
+                  <small>{item.date}</small>
+                  <button
+                    type="button"
+                    aria-label={`删除${item.title}的这条记录`}
+                    onClick={() => {
+                      const next = history.filter((_, i) => i !== index);
+                      setHistory(next);
+                      safeStorage.set(historyKey, JSON.stringify(next));
+                      if (!next.some((record) => record.id === item.id))
+                        safeStorage.remove(`tongpin-explore-${item.id}`);
+                    }}
+                  >
+                    <Trash2 />
+                  </button>
+                </article>
+              ))}
+            </div>
+          )}
+          <button className="history-clear" onClick={clearAll}>
+            <Trash2 />
+            清空所有记录
+          </button>
+        </section>
+      ) : !test ? (
+        <section className="explore-grid">
+          {tests.map((item) => (
+            <button
+              type="button"
+              className="explore-card"
+              key={item.id}
+              onClick={() => {
+                setSelected(item.id);
+                reset();
+              }}
+            >
+              <item.icon />
+              <span>独立探索 · {historyCount(item.id)} 次记录</span>
+              <h2>{item.title}</h2>
+              <p>{item.subtitle}</p>
+              <strong>
+                开始测试 <ArrowRight />
+              </strong>
+              {lastResult(item.id) && <em>上次结果：{lastResult(item.id)}</em>}
+            </button>
+          ))}
+        </section>
+      ) : result ? (
+        <section className="explore-result">
+          <button
+            className="text-back"
+            onClick={() => {
+              setSelected(null);
+              reset();
+            }}
+          >
+            <ArrowLeft />
+            返回测试中心
+          </button>
+          <div className="result-symbol">
+            <test.icon />
+          </div>
+          <span className="section-kicker">YOUR EXPLORATION NOTE</span>
+          <h2>{result.title}</h2>
+          <p>{result.summary}</p>
+          <article>
+            <b>给此刻的你</b>
+            <span>{result.advice}</span>
+          </article>
+          <small>这是一份辅助材料，不是固定标签。你可以把有共鸣的部分带回真实生活继续观察。</small>
+          <div className="explore-result-actions">
+            <button className="primary" type="button" onClick={() => onOpenMatches?.()}>
+              <Sparkles />
+              查看匹配方向
+            </button>
+            <button className="secondary" type="button" onClick={reset}>
+              <RotateCcw />
+              再测一次
+            </button>
+          </div>
+          <p className="explore-result-note">
+            登录并完善资料后，才能生成基于真实用户的匹配与推荐理由；当前不会把示例资料当作真实互动。
+          </p>
+        </section>
+      ) : (
+        <section className="explore-quiz">
+          <button
+            className="text-back"
+            onClick={() => {
+              setSelected(null);
+              reset();
+            }}
+          >
+            <ArrowLeft />
+            返回测试中心
+          </button>
+          <div className="quiz-head">
+            <span>
+              {test.icon && <test.icon />}
+              <b>{test.title}</b>
+              <small>
+                {step + 1} / {test.questions.length}
+              </small>
+            </span>
+            <i>
+              <em style={{ width: `${(step / test.questions.length) * 100}%` }} />
+            </i>
+            <h2>{test.questions[step].prompt}</h2>
+            <p>没有标准答案，选择第一时间更有共鸣的选项。</p>
+          </div>
+          <div className="quiz-options">
+            {test.questions[step].options.map((option) => (
+              <button type="button" key={option.label} onClick={() => choose(option.type)}>
+                <span>{option.label}</span>
+                <ArrowRight />
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+    </main>
+  );
+}

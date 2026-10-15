@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 
 const source = await (await import('node:fs/promises')).readFile(new URL('../src/App.tsx', import.meta.url), 'utf8')
-assert.match(source, /dataMode==='real'/)
+assert.match(source, /dataMode\s*===\s*'real'/)
 assert.match(source, /accepted_privacy_at/)
-assert.match(source, /showNotifications&&session/)
+assert.match(source, /showNotifications\s*&&\s*session/)
 assert.match(source, /matchId/)
 assert.match(source, /initialMatchId/)
 
