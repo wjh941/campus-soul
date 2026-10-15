@@ -86,11 +86,12 @@ import Onboarding from './components/Onboarding';
 import AuthModal from './components/AuthModal';
 import ProfileModal from './components/ProfileModal';
 import Avatar from './components/Avatar';
-import MatchCard, { type Person } from './components/MatchCard';
+import type { Person } from './components/MatchCard';
 import PostCard, { type Post } from './components/PostCard';
 import ProfileView from './views/ProfileView';
 import MatchesView, { type MatchFilter } from './views/MatchesView';
 import MomentsView from './views/MomentsView';
+import HomePicksView from './views/HomePicksView';
 
 type View =
   | 'home'
@@ -910,6 +911,8 @@ function App() {
           : matchPeople,
     [matchPeople, matchFilter, profile],
   );
+  const homePicks: Person[] =
+    dataMode === 'demo' ? people.slice(0, 3) : dataMode === 'real' ? matchPeople.slice(0, 3) : [];
   const discoveryPeople: MatchPerson[] =
     dataMode === 'real' && nearbyPeople.length
       ? nearbyPeople
@@ -1269,48 +1272,15 @@ function App() {
                   onHeart={(person) => void heartPerson(person)}
                 />
               </Suspense>
-              <section className="section-head">
-                <div>
-                  <span className="section-kicker">DAILY PICKS</span>
-                  <h2>今日心动推荐</h2>
-                </div>
-                <button onClick={() => go('matches')}>
-                  查看全部 <ChevronRight size={17} />
-                </button>
-              </section>
-              {dataMode === 'demo' && (
-                <div className="demo-content-note">
-                  <WifiOff />
-                  演示数据 · 上海校园场景示例 · 不代表真实用户或附近位置
-                </div>
-              )}
-              {dataMode === 'unavailable' && (
-                <div className="demo-content-note">
-                  <WifiOff />
-                  暂无可用的真实推荐。请完善资料或稍后重试，当前不会展示演示人物。
-                </div>
-              )}
-              <div className="match-grid">
-                {(dataMode === 'demo'
-                  ? people.slice(0, 3)
-                  : dataMode === 'real'
-                    ? matchPeople.slice(0, 3)
-                    : []
-                ).map((p) => (
-                  <MatchCard
-                    key={p.id}
-                    person={p}
-                    demo={dataMode !== 'real' || !session}
-                    onOpen={() => setSelectedPerson(p)}
-                    onHeart={() => heartPerson(p)}
-                    onInsight={
-                      'userId' in p && 'reasons' in p
-                        ? () => setInsightPerson(p as unknown as MatchPerson)
-                        : undefined
-                    }
-                  />
-                ))}
-              </div>
+              <HomePicksView
+                dataMode={dataMode}
+                picks={homePicks}
+                demo={dataMode !== 'real' || !session}
+                onViewAll={() => go('matches')}
+                onOpenPerson={setSelectedPerson}
+                onHeart={heartPerson}
+                onInsight={setInsightPerson}
+              />
               <section className="section-head moment-title">
                 <div>
                   <span className="section-kicker">CAMPUS MOMENTS</span>
