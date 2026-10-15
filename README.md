@@ -52,6 +52,9 @@ npm run dev
 | `npm run preview` | 本地预览构建产物 |
 | `npm run lint` | oxlint 静态检查 |
 | `npm run test` | 源码冒烟检查：用 `node:assert` 断言关键逻辑与 CI 配置存在，**不是**单元测试套件 |
+| `npm run format` / `format:check` | Prettier 格式化与门禁（`src/**/*.{ts,tsx,css}` + index.html） |
+
+> 注册密码至少 8 位（与密码恢复流程一致）；登录表单不设 `minLength`，持有旧 6 位密码的用户不受影响。
 | `npm run check:css` | 校验 `src/` 下所有 CSS 文件花括号配对 |
 
 ## 后端配置（Supabase）
@@ -76,7 +79,7 @@ Vite 环境变量在构建时写入前端，**只能放 publishable/anon key，�
 
 | 层 | 说明 |
 | --- | --- |
-| **前端** | React 19 + TypeScript + Vite，framer-motion 做动效，lucide-react 图标 |
+| **前端** | React 19 + TypeScript(strict)+ Vite，framer-motion 做动效，lucide-react 图标；Prettier 统一格式(`npm run format:check`)，`tsc -b` 进入构建门禁 |
 | **后端** | Supabase（认证、Postgres、Storage、Realtime）；前端通过 `src/lib/` 中的模块封装数据访问与 RPC 调用，`database.types.ts` 以 Supabase `Database` 类型定义全部表结构 |
 | **路由** | 单页应用，`App.tsx` 内以 `history.pushState` + `?view=` 查询参数管理 14 个视图（发现、匹配、动态、匿名、消息、会员、账号、数据、后台等），支持浏览器前进后退 |
 | **数据库** | 36 个 SQL 迁移覆盖表结构、RLS 策略、Storage 策略与 RPC（匹配、匿名会话、举报、数据导出等） |
@@ -94,7 +97,7 @@ campus-soul/
 ├── src/
 │   ├── App.tsx                # 根组件：14 个视图切换、?view= 路由与全局状态
 │   ├── main.tsx               # 入口：挂载 React 并统一导入全部样式
-│   ├── components/            # 25 个组件，21 个经 React.lazy 按需加载，其余直接导入
+│   ├── components/            # 30+ 组件，21 个经 React.lazy 按需加载；PageLoading/EntryGates/Onboarding/AuthModal/ProfileModal 由 App 直接导入
 │   ├── hooks/                 # useDialogLifecycle：对话框生命周期 Hook
 │   ├── lib/                   # 12 个数据封装模块，视图组件访问后端的唯一入口
 │   │   ├── supabase.ts        # 创建客户端并导出 isSupabaseConfigured，决定真实/演示模式
