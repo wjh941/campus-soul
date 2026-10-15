@@ -66,15 +66,13 @@ export async function submitVerification(
     if (error) throw error;
     evidence_url = path;
   }
-  const { error } = await supabase
-    .from('verification_requests')
-    .insert({
-      user_id: userId,
-      verification_type: type,
-      organization,
-      contact_email: email,
-      evidence_url,
-    });
+  const { error } = await supabase.from('verification_requests').insert({
+    user_id: userId,
+    verification_type: type,
+    organization,
+    contact_email: email,
+    evidence_url,
+  });
   if (error) throw error;
 }
 export async function fetchAdminQueue() {
