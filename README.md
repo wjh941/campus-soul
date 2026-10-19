@@ -1,6 +1,6 @@
 # 同频 · 真实社交与深度匹配
 
-> **“真实，是通往彼此唯一的路。”**
+> 🎬 **使用场景**：大学生想认识新朋友，但随机社交充满尴尬和风险。同频用"3 分钟测评匹配 + 实名认证 + 18+ 门禁"把校园社交做得真实可控——先了解自己，再遇见彼此。
 
 [![Deploy GitHub Pages](https://github.com/wjh941/campus-soul/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/wjh941/campus-soul/actions/workflows/deploy-pages.yml) ![Node 22+](https://img.shields.io/badge/node-22%2B-blue)
 
