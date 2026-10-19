@@ -1,5 +1,7 @@
 # 同频 · 真实社交与深度匹配
 
+> **“真实，是通往彼此唯一的路。”**
+
 [![Deploy GitHub Pages](https://github.com/wjh941/campus-soul/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/wjh941/campus-soul/actions/workflows/deploy-pages.yml) ![Node 22+](https://img.shields.io/badge/node-22%2B-blue)
 
 同频是一个面向成年用户的真实社交与深度匹配 Web 应用：通过引导式资料、深度测评与匹配反馈机制生成真实候选推荐，提供心动配对、私聊、匿名匹配聊天与动态广场，并内置数据导出、注销、举报拉黑等账号与安全能力。前端为 React 单页应用，后端直接使用 Supabase（认证、Postgres、Storage、RLS），无需自建服务端。
